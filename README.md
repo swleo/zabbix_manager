@@ -25,7 +25,7 @@ Just run:
 $ python main.py
 
 ```
-![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_get.png)
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_get.jpg)
 #### run the main.py
 Just run: 
 ```bash
@@ -33,4 +33,4 @@ Just run:
 $ python main.py
 
 ```
-![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_add.png)
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_add.jpg)
