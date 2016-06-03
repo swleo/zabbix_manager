@@ -12,6 +12,7 @@
 
 
 ## 【body】
+
 <h2 name="0">0 introduction</h2>
 This tool is very useful for the  management zabbix.
 It current supports the following:
@@ -19,7 +20,9 @@ It current supports the following:
 * Hostgroups
 * hosts
 <h2 name="1">1 ManaterTool Function</h2>
+
 ### Usage
+
 Configure zabbix_manager
 First you should configure zabbix_config.ini to works with appropriate zabbix server and use right credentials.
 ```bash
