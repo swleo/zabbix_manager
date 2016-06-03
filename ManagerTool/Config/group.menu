@@ -1,0 +1,1 @@
+group_all%./lib/zabbix_api.py -G

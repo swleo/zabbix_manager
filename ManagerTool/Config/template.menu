@@ -1,0 +1,1 @@
+host_all%./lib/zabbix_api.py -T
