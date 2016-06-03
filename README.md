@@ -15,11 +15,13 @@
 ## 【body】
 
 <h2 name="0">0 introduction</h2>
+
 This tool is very useful for the  management zabbix.
 It current supports the following:
-* Templates 
-* Hostgroups
-* hosts
+> * Templates 
+> * Hostgroups
+> * hosts
+
 <h2 name="1">1 ManaterTool Function</h2>
 
 <h3 name="1.1">1.1 usage</h3>
