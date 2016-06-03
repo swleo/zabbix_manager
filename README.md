@@ -8,6 +8,7 @@
 
 [0 introduction](#0)  
 [1 ManagerTool_function ](#1)  
+........[1.1 usage ](#1.1)  
 [2 version ](#3)  
 
 
@@ -21,7 +22,7 @@ It current supports the following:
 * hosts
 <h2 name="1">1 ManaterTool Function</h2>
 
-### Usage
+<h3 name="1.1">1.1 usage</h3>
 
 Configure zabbix_manager
 First you should configure zabbix_config.ini to works with appropriate zabbix server and use right credentials.
@@ -34,7 +35,7 @@ port = 80
 user = admin
 password = zabbix
 ``` 
-#### run the main.sh
+run the main.sh
 Just run: 
 ```bash
 $ sh main.sh
