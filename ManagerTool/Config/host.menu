@@ -1,1 +1,1 @@
-host_all%./lib/zabbix_api.py -H
+host_all%./lib_zabbix/zabbix_api.py -H
