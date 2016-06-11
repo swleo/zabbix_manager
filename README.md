@@ -49,5 +49,6 @@ list the hosts
 
 <h2 name="2">2 version</h2>
 ----
+* v1.0.3，2016-06-11 add history_report
 * v1.0.2，2016-06-03 Modify the command line in interactive mode
 * v1.0.1，2016-04-16 First edit
