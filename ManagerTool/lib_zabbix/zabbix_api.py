@@ -87,8 +87,14 @@ class zabbix_api:
          
     #}}}
     #{{{host_get
-    def host_get(self,hostName=''): 
-        table_show=[]
+    ##
+    # @brief host_get 
+    #
+    # @param terminal_table:False--True
+    # @param hostName
+    #
+    # @return 
+    def host_get(self,terminal_table,hostName=''): 
         data=json.dumps({
                 "jsonrpc": "2.0",
                 "method": "host.get",
@@ -99,7 +105,6 @@ class zabbix_api:
                 "auth": self.user_login(),
                 "id": 1
                 })
-        #print data
         request = urllib2.Request(self.url,data) 
         for key in self.header: 
             request.add_header(key, self.header[key]) 
@@ -116,7 +121,11 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "主机数量: \033[31m%s\033[0m"%(len(response['result']))
-            table_show.append(["HostID","HostName","name","Status","Available"])
+            if terminal_table:
+                table_show=[]
+                table_show.append(["HostID","HostName","name","Status","Available"])
+            else:
+                print "HostID","HostName","name","Status","Available"
 
             if len(response['result']) == 0:
                 return 0
@@ -125,12 +134,16 @@ class zabbix_api:
                 available={"0":"Unknown","1":Color('{autobggreen}available{/autobggreen}'),"2":Color('{autobgred}Unavailable{/autobgred}')}
                 if len(hostName)==0:
                     #print host
-                    table_show.append([host['hostid'],host['host'],host['name'],status[host['status']],available[host['available']]])
+                    if terminal_table:
+                        table_show.append([host['hostid'],host['host'],host['name'],status[host['status']],available[host['available']]])
+                    else:
+                        print host['hostid'],host['host'],host['name'],status[host['status']],available[host['available']]
                 else:
-                    table_show.append([host['hostid'],host['host'],status[host['status']],available[host['available']]])
+                    print host['hostid'],host['host'],host['name'],status[host['status']],available[host['available']]
                     return host['hostid']
-            table=SingleTable(table_show)
-            print(table.table)
+            if terminal_table:
+                table=SingleTable(table_show)
+                print(table.table)
 
     #}}}
     #{{{_host_get
@@ -357,8 +370,11 @@ class zabbix_api:
             err_msg("时间格式 ['2016-05-01'] ['2016-06-01']")
 
         if export_xls[0] == 'ON':
-            xlswriter = XLSWriter.XLSWriter(export_xls[1])
-            xlswriter.writerow(["hostid","hostname","name","itemid","itemName","min","max","avg"],sheet_name=sheetName)
+            xlswriter = XLSWriter.XLSWriter(export_xls[2])
+            xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+            xlswriter.add_header(u"报告周期:"+sheetName,8,sheet_name=sheetName)
+            xlswriter.setcol_width([10, 20, 20,10,20,10,10,10],sheet_name=sheetName)
+            xlswriter.writerow(["hostid","hostname","name","itemid","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
         time_from = int(time.mktime(startTime))
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
@@ -391,9 +407,7 @@ class zabbix_api:
                 else:
                     print host_info[0],'\t',host_info[1],'\t',host_info[2],'\t',itemid,item_name,'\t',history_min,'\t',history_max,'\t',history_avg
                 if export_xls[0] == "ON":
-                    xlswriter.writerow([host_info[0],host_info[1],host_info[2],itemid,item_name,history_min,history_max,history_avg],sheet_name=sheetName)
-
-                
+                    xlswriter.writerow([host_info[0],host_info[1],host_info[2],itemid,item_name,history_min,history_max,history_avg],sheet_name=sheetName,border=True)
         print
         if terminal_table:
             table=SingleTable(table_show)
@@ -402,9 +416,9 @@ class zabbix_api:
         if export_xls[0] == 'ON':
             xlswriter.save()
         return 0
-    #}}}
+ #}}}
     #{{{template_get
-    def template_get(self,templateName=''): 
+    def template_get(self,terminal_table,templateName=''): 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method": "template.get", 
@@ -428,20 +442,26 @@ class zabbix_api:
             print "Error as ", e 
         else: 
             response = json.loads(result.read()) 
-            table_show=[]
-            table_show.append(["template","id"])
+            if terminal_table:
+                table_show=[]
+                table_show.append(["template","id"])
+            else:
+                print "template","id"
             result.close() 
             #print response
             for template in response['result']:                
                 if len(templateName)==0:
-                    table_show.append([template['name'],template['templateid']])
-                    #print "template : \033[31m%s\033[0m\t  id : %s" % (template['name'], template['templateid'])
+                    if terminal_table:
+                        table_show.append([template['name'],template['templateid']])
+                    else:
+                        print "template : \033[31m%s\033[0m\t  id : %s" % (template['name'], template['templateid'])
                 else:
                     self.templateID = response['result'][0]['templateid'] 
                     print "Template Name :  \033[31m%s\033[0m "%templateName
                     return response['result'][0]['templateid']
-            table=SingleTable(table_show)
-            print(table.table)
+            if terminal_table:
+                table=SingleTable(table_show)
+                print(table.table)
     #}}}
     #{{{hostgroup_create
     def hostgroup_create(self,hostgroupName):
@@ -662,21 +682,22 @@ class zabbix_api:
 if __name__ == "__main__":
     zabbix=zabbix_api()
     parser=argparse.ArgumentParser(description='zabbix  api ',usage='%(prog)s [options]')
-    parser.add_argument('-H','--host',nargs='?',dest='listhost',default='host',help='查询主机')
-    parser.add_argument('-G','--group',nargs='?',dest='listgroup',default='group',help='查询主机组')
-    parser.add_argument('-T','--template',nargs='?',dest='listtemp',default='template',help='查询模板信息')
+    parser.add_argument('-H','--host',nargs='?',metavar=('HostName'),dest='listhost',default='host',help='查询主机')
+    parser.add_argument('-G','--group',nargs='?',metavar=('GroupName'),dest='listgroup',default='group',help='查询主机组')
+    parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history_get',nargs=4,metavar=('history','item_ID','time_from','time_till'),dest='history_get',help='查询history')
     parser.add_argument('--history_report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='history_report',help='zabbix_api.py \
                         --history_report 0 "CPU idle time" "2016-06-03" "2016-06-10"')
-    parser.add_argument('--table',nargs='?',dest='terminal_table',default="OFF",help='show the terminaltables')
-    parser.add_argument('--xls',nargs=1,metavar=('xls_name'),dest='xls',help='export xls')
+    parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
+    parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
+                        help='export data to xls')
     parser.add_argument('--trend_get',nargs=1,metavar=('item_ID'),dest='trend_get',help='查询item trend')
     parser.add_argument('-A','--add-group',nargs=1,dest='addgroup',help='添加主机组')
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
     parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.3')
     if len(sys.argv)==1:
         print parser.print_help()
     else:
@@ -690,9 +711,9 @@ if __name__ == "__main__":
             export_xls[1]=args.xls[0]
         if args.listhost != 'host' :
             if args.listhost:
-                zabbix.host_get(args.listhost)
+                zabbix.host_get(terminal_table,args.listhost)
             else:
-                zabbix.host_get()
+                zabbix.host_get(terminal_table)
         if args.listgroup !='group':
             if args.listgroup:
                 zabbix.hostgroup_get(args.listgroup)
@@ -700,9 +721,9 @@ if __name__ == "__main__":
                 zabbix.hostgroup_get()
         if args.listtemp != 'template':
             if args.listtemp:
-                zabbix.template_get(args.listtemp)
+                zabbix.template_get(terminal_table,args.listtemp)
             else:
-                zabbix.template_get()
+                zabbix.template_get(terminal_table)
         if args.listitem:
             if len(args.listitem) == 1:
                 zabbix.item_get(args.listitem[0])

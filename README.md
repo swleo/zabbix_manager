@@ -9,7 +9,7 @@
 [0 introduction](#0)  
 [1 ManagerTool_function ](#1)  
 ........[1.1 usage ](#1.1)  
-[2 version ](#3)  
+[2 version ](#2)  
 
 
 ## 【body】
@@ -52,3 +52,7 @@ list the hosts
 * v1.0.3，2016-06-11 add history_report
 * v1.0.2，2016-06-03 Modify the command line in interactive mode
 * v1.0.1，2016-04-16 First edit
+
+## 致谢
+
+1. 感谢南非蜘蛛的指导
