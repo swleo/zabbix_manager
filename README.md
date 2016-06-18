@@ -9,7 +9,8 @@
 [0 introduction](#0)  
 [1 ManagerTool_function ](#1)  
 ........[1.1 usage ](#1.1)  
-[2 version ](#2)  
+[2 zabbix_api ](#2)  
+[3 version ](#3)  
 
 
 ## 【body】
@@ -21,6 +22,8 @@ It current supports the following:
 > * Templates 
 > * Hostgroups
 > * hosts
+> * usergroup
+> * user
 
 <h2 name="1">1 ManaterTool Function</h2>
 
@@ -47,8 +50,42 @@ list the hosts
 
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_get.jpg)
 
-<h2 name="2">2 version</h2>
+<h2 name="2">2 zabbix_api</h2>
+First you should configure zabbix_config.ini to works with appropriate zabbix server and use right credentials.
+```bash
+$ cat zabbix_config.ini
+
+[zabbixserver]
+server = 192.168.199.128
+port = 80
+user = admin
+password = zabbix
+``` 
+<h3 name="2.1">2.1 hostgroups manage</h3>
+(1)list hostgroups
+```bash
+#python -G
+
+```
+(2)add a hostgroup
+```bash
+## python zabbix_api.py --hostgroup_add "ceshi"
+
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/hostgroup_add.jpg)
+<h3 name="2.2">2.2 usergroups manage</h3>
+(1)list usergroups
+```bash
+#python --usergroup
+```
+(2)add a usergroup
+```bash
+## python zabbix_api.py --usergroup "op" "HostgroupName"
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/usergroup_add.jpg)
+<h2 name="3">3 version</h2>
 ----
+* v1.0.4，2016-06-11 add usergroup manage
 * v1.0.3，2016-06-11 add history_report
 * v1.0.2，2016-06-03 Modify the command line in interactive mode
 * v1.0.1，2016-04-16 First edit
