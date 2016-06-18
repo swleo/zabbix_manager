@@ -807,7 +807,7 @@ class zabbix_api:
                            "params":{ 
                                      "name":usergroupName,
                                      "rights":{ 
-                                         "permission": 0,
+                                         "permission": 3,
                                          "id":hostgroupID
                                       }, 
                                      }, 
@@ -877,8 +877,8 @@ if __name__ == "__main__":
     # user
     parser.add_argument('--usergroup',nargs='?',metavar=('name'),default='usergroup',dest='usergroup',help='Inquire usergroup ID')
     parser.add_argument('--usergroup_add',dest='usergroup_add',nargs=2,metavar=('usergroupName','hostgroupName'),help='add usergroup')
-    parser.add_argument('--user',nargs='?',metavar=('name'),default='user',dest='user',help='Inquire user ID')
     parser.add_argument('--usergroup_del',dest='usergroup_del',nargs=1,metavar=('usergroupID'),help='delete usergroup')
+    parser.add_argument('--user',nargs='?',metavar=('name'),default='user',dest='user',help='Inquire user ID')
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
     parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')

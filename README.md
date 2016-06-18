@@ -7,6 +7,7 @@
 ----
 
 [0 introduction](#0)  
+........[0.1 automation ](#0.1)  
 [1 ManagerTool_function ](#1)  
 ........[1.1 usage ](#1.1)  
 [2 zabbix_api ](#2)  
@@ -24,6 +25,20 @@ It current supports the following:
 > * hosts
 > * usergroup
 > * user
+
+<h3 name="0.1">0.1 automation</h3>
+
+**monitor**
+When we plan to monitor, we must first create a host group, and then import some template, and finally add some hosts, zabbix_manager is a better choice
+
+**alarm**
+When we plan to use zabbix alarm . 
+first, we need to add the alarm mode. 
+the second, we need to create user groups and users.
+the third, the user configuration of alarms. 
+fourth, create action
+**report**
+Daily we need to export the report, use zabbix manager can export xls file using zabbix_manager will greatly save us time
 
 <h2 name="1">1 ManaterTool Function</h2>
 
@@ -69,7 +84,7 @@ password = zabbix
 ```
 (2)add a hostgroup
 ```bash
-## python zabbix_api.py --hostgroup_add "ceshi"
+# python zabbix_api.py --hostgroup_add "ceshi"
 
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/hostgroup_add.jpg)
@@ -80,9 +95,15 @@ password = zabbix
 ```
 (2)add a usergroup
 ```bash
-## python zabbix_api.py --usergroup "op" "HostgroupName"
+# python zabbix_api.py --usergroup "op" "HostgroupName"
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/usergroup_add.jpg)
+<h3 name="2.3">2.3 host manage</h3>
+(1)list hosts
+```bash
+#python -H --table
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_list.jpg)
 <h2 name="3">3 version</h2>
 ----
 * v1.0.4，2016-06-11 add usergroup manage
