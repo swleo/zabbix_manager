@@ -136,11 +136,13 @@ password = zabbix
 #python --mediatype --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_list.jpg)
+
 (2)add a mediatype
 ```bash
 # python zabbix_api.py --mediatype_add mediaName scriptName
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_add.jpg)
+
 (3)delete a mediatype
 ```bash
 # python zabbix_api.py --mediatype_del mediaName

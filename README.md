@@ -19,7 +19,7 @@
 ........[2.1 Hostgroups management ](#2.1)  
 ........[2.2 usergroups management ](#2.2)  
 ........[2.3 hosts management ](#2.3)  
-........[2.3 mediatype management ](#2.4)  
+........[2.4 mediatype management ](#2.4)  
 [3 version ](#3)  
 
 
@@ -123,11 +123,13 @@ password = zabbix
 #python --mediatype --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_list.jpg)
+
 (2)add a mediatype
 ```bash
 # python zabbix_api.py --mediatype_add mediaName scriptName
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_add.jpg)
+
 (3)delete a mediatype
 ```bash
 # python zabbix_api.py --mediatype_del mediaName
