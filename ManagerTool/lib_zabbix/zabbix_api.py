@@ -79,7 +79,8 @@ class zabbix_api:
         try: 
             result = urllib2.urlopen(request) 
         except URLError as e: 
-            print "\033[041m 用户认证失败，请检查 !\033[0m", e.code 
+            print "\033[041m 用户认证失败，请检查 !\033[0m", e
+            exit(1)
         else: 
             response = json.loads(result.read()) 
             result.close() 
