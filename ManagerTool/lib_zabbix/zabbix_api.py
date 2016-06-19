@@ -835,7 +835,7 @@ class zabbix_api:
         for i in usergroupName.split(','):
             usergroupID=self.usergroup_get(i)
             if usergroupID:
-                usergroup_list.append(self.usergroup_get(i))      
+                usergroup_list.append(usergroupID)      
         if not len(usergroup_list):
             print "usergroup \033[041m %s\033[0m  is not exists !"% usergroupName 
             exit(1)
@@ -859,6 +859,128 @@ class zabbix_api:
             result.close() 
             print "usergroup \033[042m %s\033[0m  delete OK !"% usergroupName 
     #}}}
+    # mediatype
+    #{{{mediatype_get
+    ##
+    # @brief mediatype_get 
+    #
+    # @return 
+    def mediatype_get(self,mediatypeName=''): 
+        data=json.dumps({
+                "jsonrpc": "2.0",
+                "method": "mediatype.get",
+                "params": {
+                          "output": "extend",
+                          "filter":{"description":mediatypeName} 
+                          },
+                "auth": self.user_login(),
+                "id": 1
+                })
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            if hasattr(e, 'reason'): 
+                print 'We failed to reach a server.' 
+                print 'Reason: ', e.reason 
+            elif hasattr(e, 'code'): 
+                print 'The server could not fulfill the request.' 
+                print 'Error code: ', e.code 
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            print "mediatype sum: \033[31m%s\033[0m"%(len(response['result']))
+
+            if not len(mediatypeName):
+                if self.terminal_table:
+                    table_show=[]
+                    table_show.append(["mediatypeid","type","description","exec_path"])
+                else:
+                    print "mediatypeid","type","description","exec_path"
+
+            if len(response['result']) == 0:
+                return 0
+            for mediatype in response['result']:      
+                if len(mediatypeName)==0:
+                    if self.terminal_table:
+                        table_show.append([mediatype['mediatypeid'],mediatype['type'],mediatype['description'],mediatype['exec_path']])
+                    else:
+                        print mediatype['mediatypeid'],mediatype['type'],mediatype['description'],mediatype['exec_path']
+                else:
+                    return mediatype['mediatypeid']
+            if self.terminal_table:
+                table=SingleTable(table_show)
+                print(table.table)
+    #}}}
+    #{{{mediatype_create
+    # mediatypeType Possible values: 
+    # 0 - email; 
+    # 1 - script; 
+    # 2 - SMS; 
+    # 3 - Jabber; 
+    def mediatype_create(self, mediatypeName,mediatypePath): 
+        if self.mediatype_get(mediatypeName):
+            print "\033[041mthis mediatypeName is exists\033[0m" 
+            sys.exit(1)
+
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"mediatype.create", 
+                           "params": {
+                                 "description": mediatypeName,
+                                 "type": 1,
+                                 "exec_path": mediatypePath,
+                                               },
+                           "auth": self.user_login(), 
+                           "id":1                   
+        }) 
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+            #print response['result']
+            print "add mediatype : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (mediatypeName, response['result']['mediatypeids'][0]) 
+    #}}}
+    #{{{mediatype_del
+    def mediatype_del(self,mediatypeName):
+        mediatype_list=[]
+        for i in mediatypeName.split(','):
+            mediatypeID=self.mediatype_get(i)
+            if mediatypeID:
+                mediatype_list.append(mediatypeID)      
+        if not len(mediatype_list):
+            print "mediatype \033[041m %s\033[0m  is not exists !"% mediatypeName 
+            exit(1)
+        data=json.dumps({
+                "jsonrpc": "2.0",
+                "method": "mediatype.delete",
+                "params": mediatype_list,
+                "auth": self.user_login(),
+                "id": 1
+                })
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+             
+        try: 
+            result = urllib2.urlopen(request) 
+        except Exception,e: 
+            print  e
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            print "mediatype \033[042m %s\033[0m  delete OK !"% mediatypeName 
+    #}}}
 
 
 if __name__ == "__main__":
@@ -878,12 +1000,16 @@ if __name__ == "__main__":
     # user
     parser.add_argument('--usergroup',nargs='?',metavar=('name'),default='usergroup',dest='usergroup',help='Inquire usergroup ID')
     parser.add_argument('--usergroup_add',dest='usergroup_add',nargs=2,metavar=('usergroupName','hostgroupName'),help='add usergroup')
-    parser.add_argument('--usergroup_del',dest='usergroup_del',nargs=1,metavar=('usergroupID'),help='delete usergroup')
+    parser.add_argument('--usergroup_del',dest='usergroup_del',nargs=1,metavar=('usergroupName'),help='delete usergroup')
     parser.add_argument('--user',nargs='?',metavar=('name'),default='user',dest='user',help='Inquire user ID')
+    # mediatype
+    parser.add_argument('--mediatype',nargs='?',metavar=('name'),default='mediatype',dest='mediatype',help='Inquire mediatype')
+    parser.add_argument('--mediatype_add',dest='mediatype_add',nargs=2,metavar=('mediaName','scriptName'),help='add mediatype script')
+    parser.add_argument('--mediatype_del',dest='mediatype_del',nargs=1,metavar=('mediatypeName'),help='delete mediatype')
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
     parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.4')
+    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.5')
     if len(sys.argv)==1:
         print parser.print_help()
     else:
@@ -916,6 +1042,11 @@ if __name__ == "__main__":
                 zabbix.usergroup_get(args.usergroup)
             else:
                 zabbix.usergroup_get()
+        if args.mediatype != 'mediatype':
+            if args.mediatype:
+                zabbix.mediatype_get(args.mediatype)
+            else:
+                zabbix.mediatype_get()
         if args.user != 'user':
             if args.user:
                 zabbix.user_get(args.user)
@@ -936,10 +1067,20 @@ if __name__ == "__main__":
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
             zabbix.host_create(args.addhost[0], args.addhost[1], args.addhost[2])
+        ############
+        # usergroup
+        ############
         if args.usergroup_add:
             zabbix.usergroup_create(args.usergroup_add[0], args.usergroup_add[1])
         if args.usergroup_del:
             zabbix.usergroup_del(args.usergroup_del[0])
+        ############
+        # usergroup
+        ############
+        if args.mediatype_add:
+            zabbix.mediatype_create(args.mediatype_add[0], args.mediatype_add[1])
+        if args.mediatype_del:
+            zabbix.mediatype_del(args.mediatype_del[0])
         if args.disablehost:
             zabbix.host_disable(args.disablehost)
         if args.deletehost:

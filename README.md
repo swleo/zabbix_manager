@@ -18,7 +18,8 @@
 [2 zabbix_api ](#2)  
 ........[2.1 Hostgroups management ](#2.1)  
 ........[2.2 usergroups management ](#2.2)  
-........[2.3 hosts management ](#2.2)  
+........[2.3 hosts management ](#2.3)  
+........[2.3 mediatype management ](#2.4)  
 [3 version ](#3)  
 
 
@@ -107,7 +108,7 @@ password = zabbix
 ```
 (2)add a usergroup
 ```bash
-# python zabbix_api.py --usergroup "op" "HostgroupName"
+# python zabbix_api.py --usergroup_add "op" "HostgroupName"
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/usergroup_add.jpg)
 <h3 name="2.3">2.3 hosts management</h3>
@@ -116,9 +117,26 @@ password = zabbix
 #python -H --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_list.jpg)
+<h3 name="2.4">2.4 mediatype management</h3>
+(1)list mediatype
+```bash
+#python --mediatype --table
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_list.jpg)
+(2)add a mediatype
+```bash
+# python zabbix_api.py --mediatype_add mediaName scriptName
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_add.jpg)
+(3)delete a mediatype
+```bash
+# python zabbix_api.py --mediatype_del mediaName
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_del.jpg)
 <h2 name="3">3 version</h2>
 ----
-* v1.0.4，2016-06-11 add usergroup manage
+* v1.0.5，2016-06-19 add mediatype manage
+* v1.0.4，2016-06-18 add usergroup manage
 * v1.0.3，2016-06-11 add history_report
 * v1.0.2，2016-06-03 Modify the command line in interactive mode
 * v1.0.1，2016-04-16 First edit

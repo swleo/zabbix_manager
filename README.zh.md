@@ -18,7 +18,8 @@
 [2 zabbix api文件 ](#2)  
 ........[2.1 Hostgroups 管理 ](#2.1)  
 ........[2.2 usergroups 管理 ](#2.2)  
-........[2.3 hosts 管理 ](#2.2)  
+........[2.3 hosts 管理 ](#2.3)  
+........[2.4 mediatype 管理 ](#2.4)  
 [3 版本 ](#3)  
 
 
@@ -120,7 +121,7 @@ password = zabbix
 ```
 (2)add a usergroup
 ```bash
-# python zabbix_api.py --usergroup "op" "HostgroupName"
+# python zabbix_api.py --usergroup_add "op" "HostgroupName"
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/usergroup_add.jpg)
 <h3 name="2.3">2.3 host 管理</h3>
@@ -129,9 +130,27 @@ password = zabbix
 #python -H --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_list.jpg)
+<h3 name="2.4">2.4 mediatype 管理</h3>
+(1)list mediatype
+```bash
+#python --mediatype --table
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_list.jpg)
+(2)add a mediatype
+```bash
+# python zabbix_api.py --mediatype_add mediaName scriptName
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_add.jpg)
+(3)delete a mediatype
+```bash
+# python zabbix_api.py --mediatype_del mediaName
+```
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_del.jpg)
+<h2 name="3">3 version</h2>
 <h2 name="3">3 版本发布</h2>
 ----
-* v1.0.4，2016-06-11 新增：新增用户组和用户管理
+* v1.0.5，2016-06-19 新增：新增报警媒介类型管理
+* v1.0.4，2016-06-18 新增：新增用户组和用户管理
 * v1.0.3，2016-06-11 新增：可以方便的直接导出报表
 * v1.0.2，2016-06-03 新增：新增交互模式
 * v1.0.1，2016-04-16 新增：初次编写
