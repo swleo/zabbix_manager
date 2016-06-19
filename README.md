@@ -1,4 +1,9 @@
 # zabbix_manager
+## language selection
+
+[中文](https://github.com/BillWang139967/zabbix_manager/blob/master/README.zh.md)
+[English](https://github.com/BillWang139967/zabbix_manager/blob/master/README.md)
+
 ## Supported versions
 > * zabbix2.4
 > * zabbix3.0
@@ -11,6 +16,9 @@
 [1 ManagerTool_function ](#1)  
 ........[1.1 usage ](#1.1)  
 [2 zabbix_api ](#2)  
+........[2.1 Hostgroups management ](#2.1)  
+........[2.2 usergroups management ](#2.2)  
+........[2.3 hosts management ](#2.2)  
 [3 version ](#3)  
 
 
@@ -80,7 +88,7 @@ port = 80
 user = admin
 password = zabbix
 ``` 
-<h3 name="2.1">2.1 hostgroups manage</h3>
+<h3 name="2.1">2.1 hostgroups management</h3>
 (1)list hostgroups
 ```bash
 #python -G
@@ -92,7 +100,7 @@ password = zabbix
 
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/hostgroup_add.jpg)
-<h3 name="2.2">2.2 usergroups manage</h3>
+<h3 name="2.2">2.2 usergroups management</h3>
 (1)list usergroups
 ```bash
 #python --usergroup
@@ -102,7 +110,7 @@ password = zabbix
 # python zabbix_api.py --usergroup "op" "HostgroupName"
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/usergroup_add.jpg)
-<h3 name="2.3">2.3 host manage</h3>
+<h3 name="2.3">2.3 hosts management</h3>
 (1)list hosts
 ```bash
 #python -H --table
