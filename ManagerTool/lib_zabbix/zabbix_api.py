@@ -696,6 +696,7 @@ class zabbix_api:
                 "method": "user.get",
                 "params": {
                           "output": "extend",
+                          "filter":{"alias":userName} 
                           },
                 "auth": self.user_login(),
                 "id": 1
@@ -727,15 +728,62 @@ class zabbix_api:
             for user in response['result']:      
                 if len(userName)==0:
                     if self.terminal_table:
-                        table_show.append([user['userid'],user['name'],user['name'],user['url']])
+                        table_show.append([user['userid'],user['alias'],user['name'],user['url']])
                     else:
-                        print user['userid'],user['name'],user['name'],user['url']
+                        print user['userid'],user['alias'],user['name'],user['url']
                 else:
                     #print user_group['usrgrpid'],user_group['name'],user_group['gui_access'],user_group['users_status']
                     return user['userid']
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
+    #}}}
+    #{{{user_create
+    def user_create(self, userName,userPassword,usergroupName,mediaName,email): 
+        if self.user_get(userName):
+            print "\033[041mthis userName is exists\033[0m" 
+            sys.exit(1)
+
+        usergroupID=self.usergroup_get(usergroupName)
+        mediatypeID=self.mediatype_get(mediaName)
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"user.create", 
+                           "params": {
+                                "alias": userName,
+                                "passwd": userPassword,
+                                "usrgrps": [
+                                             {
+                                             "usrgrpid": usergroupID
+                                             }      
+                                            ],
+                                "user_medias": [
+                                            {
+                                                "mediatypeid": mediatypeID,
+                                                "sendto": email,
+                                                "active": 0,
+                                                "severity": 63,
+                                                "period": "1-7,00:00-24:00"
+                                            }
+                                                ]
+                                       },
+                           "auth": self.user_login(), 
+                           "id":1                   
+        }) 
+        print data
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+            print "add user : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (usergroupName, response['result']['userids'][0]) 
     #}}}
     # usergroup
     #{{{usergroup_get
@@ -1002,6 +1050,7 @@ if __name__ == "__main__":
     parser.add_argument('--usergroup_add',dest='usergroup_add',nargs=2,metavar=('usergroupName','hostgroupName'),help='add usergroup')
     parser.add_argument('--usergroup_del',dest='usergroup_del',nargs=1,metavar=('usergroupName'),help='delete usergroup')
     parser.add_argument('--user',nargs='?',metavar=('name'),default='user',dest='user',help='Inquire user ID')
+    parser.add_argument('--user_add',dest='user_add',nargs=5,metavar=("userName","userPassword","usergroupName","mediaName","email"),help='add user')
     # mediatype
     parser.add_argument('--mediatype',nargs='?',metavar=('name'),default='mediatype',dest='mediatype',help='Inquire mediatype')
     parser.add_argument('--mediatype_add',dest='mediatype_add',nargs=2,metavar=('mediaName','scriptName'),help='add mediatype script')
@@ -1047,11 +1096,6 @@ if __name__ == "__main__":
                 zabbix.mediatype_get(args.mediatype)
             else:
                 zabbix.mediatype_get()
-        if args.user != 'user':
-            if args.user:
-                zabbix.user_get(args.user)
-            else:
-                zabbix.user_get()
         if args.listitem:
             if len(args.listitem) == 1:
                 zabbix.item_get(args.listitem[0])
@@ -1067,6 +1111,21 @@ if __name__ == "__main__":
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
             zabbix.host_create(args.addhost[0], args.addhost[1], args.addhost[2])
+        ############
+        # user
+        ############
+        if args.user != 'user':
+            if args.user:
+                zabbix.user_get(args.user)
+            else:
+                zabbix.user_get()
+        if args.user_add:
+            zabbix.user_create(args.user_add[0],\
+                               args.user_add[1],\
+                               args.user_add[2],\
+                               args.user_add[3],\
+                               args.user_add[4]
+                              )
         ############
         # usergroup
         ############
