@@ -1063,6 +1063,7 @@ class zabbix_api:
                                  "description": mediatypeName,
                                  "type": 1,
                                  "exec_path": mediatypePath,
+                                 "exec_params":"{ALERT.SENDTO}\n{ALERT.SUBJECT}\n{ALERT.MESSAGE}\n"
                                                },
                            "auth": self.user_login(), 
                            "id":1                   
@@ -1079,7 +1080,6 @@ class zabbix_api:
             #print result.read()
             response = json.loads(result.read()) 
             result.close() 
-            #print response['result']
             print "add mediatype : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (mediatypeName, response['result']['mediatypeids'][0]) 
     #}}}
     #{{{mediatype_del
