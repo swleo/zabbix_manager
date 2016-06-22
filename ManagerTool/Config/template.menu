@@ -1,1 +1,2 @@
-host_all%./lib_zabbix/zabbix_api.py -T
+template_all%./lib_zabbix/zabbix_api.py -T
+template_import_ceishi%sh ./scripts/template/template_import.sh

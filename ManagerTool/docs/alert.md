@@ -4,9 +4,9 @@
 [返回主页](https://github.com/BillWang139967/zabbix_manager/tree/master/ManagerTool)
 
 
-<h3 name="1.1">1.1 配置报警</h3>
+<h2 name="1.1">1.1 配置报警</h2>
 
-修改配置文件
+<h3>(1)修改配置文件zabbix_config.ini</h3>
 
 第一步是修改配置文件zabbix_config.ini 
 
@@ -31,8 +31,12 @@ info_echo "create user op"
 python ./lib_zabbix/zabbix_api.py --user_add op 123456 op alerts "ceshi@qq.com"
 
 ``` 
-直接执行在本目录执行 sh scripts/alert/alert.sh
+<h3>(2)创建报警用户及群组</h3>
+直接执行在本目录执行 
 
+```bash
+sh scripts/alert/alert.sh
+```
 直接执行程序后，会执行操作如下
 
 (1)创建alerts脚本报警方式
@@ -43,3 +47,7 @@ python ./lib_zabbix/zabbix_api.py --user_add op 123456 op alerts "ceshi@qq.com"
 
 (4)创建用户op，属于用户群组op，密码为123456，同时邮箱为"ceshi@qq.com"
 
+
+<h3>(3)添加action</h3>
+
+需要在界面上创建action

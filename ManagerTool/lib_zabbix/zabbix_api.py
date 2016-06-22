@@ -534,52 +534,6 @@ class zabbix_api:
             xlswriter.save()
         return 0
  #}}}
-    #{{{template_get
-    def template_get(self,templateName=''): 
-        data = json.dumps({ 
-                           "jsonrpc":"2.0", 
-                           "method": "template.get", 
-                           "params": { 
-                                      "output": "extend", 
-                                      "filter": { 
-                                                 "name":templateName                                                        
-                                                 } 
-                                      }, 
-                           "auth":self.user_login(), 
-                           "id":1, 
-                           })
-         
-        request = urllib2.Request(self.url, data) 
-        for key in self.header: 
-            request.add_header(key, self.header[key]) 
-              
-        try: 
-            result = urllib2.urlopen(request) 
-        except URLError as e: 
-            print "Error as ", e 
-        else: 
-            response = json.loads(result.read()) 
-            if self.terminal_table:
-                table_show=[]
-                table_show.append(["template","id"])
-            else:
-                print "template","id"
-            result.close() 
-            #print response
-            for template in response['result']:                
-                if len(templateName)==0:
-                    if self.terminal_table:
-                        table_show.append([template['name'],template['templateid']])
-                    else:
-                        print "template : \033[31m%s\033[0m\t  id : %s" % (template['name'], template['templateid'])
-                else:
-                    self.templateID = response['result'][0]['templateid'] 
-                    print "Template Name :  \033[31m%s\033[0m "%templateName
-                    return response['result'][0]['templateid']
-            if self.terminal_table:
-                table=SingleTable(table_show)
-                print(table.table)
-    #}}}
     #{{{hostgroup_create
     def hostgroup_create(self,hostgroupName):
 
@@ -681,6 +635,136 @@ class zabbix_api:
                 return 0
             for trend in response['result']:
                 print trend 
+    #}}}
+    # template
+    #{{{template_get
+    def template_get(self,templateName=''): 
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method": "template.get", 
+                           "params": { 
+                                      "output": "extend", 
+                                      "filter": { 
+                                                 "name":templateName                                                        
+                                                 } 
+                                      }, 
+                           "auth":self.user_login(), 
+                           "id":1, 
+                           })
+         
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            response = json.loads(result.read()) 
+            if self.terminal_table:
+                table_show=[]
+                table_show.append(["template","id"])
+            else:
+                print "template","id"
+            result.close() 
+            #print response
+            for template in response['result']:                
+                if len(templateName)==0:
+                    if self.terminal_table:
+                        table_show.append([template['name'],template['templateid']])
+                    else:
+                        print "template : \033[31m%s\033[0m\t  id : %s" % (template['name'], template['templateid'])
+                else:
+                    self.templateID = response['result'][0]['templateid'] 
+                    print "Template Name :  \033[31m%s\033[0m "%templateName
+                    return response['result'][0]['templateid']
+            if self.terminal_table:
+                table=SingleTable(table_show)
+                print(table.table)
+    #}}}
+    #{{{configuration
+    def configuration_import(self,template): 
+        rules = {
+            'applications': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'discoveryRules': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'graphs': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'groups': {
+                'createMissing': 'true'
+            },
+            'hosts': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'images': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'items': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'maps': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'screens': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'templateLinkage': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'templates': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'templateScreens': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+            'triggers': {
+                'createMissing': 'true',
+                'updateExisting': 'true'
+            },
+        }
+
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method": "configuration.import", 
+                           "params": { 
+                                      "format": "xml", 
+                                      "rules": rules,
+                                      "source":template
+                                      }, 
+                           "auth":self.user_login(), 
+                           "id":1, 
+                           })
+         
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+            print response['result']
+            #print "add user : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (usergroupName, response['result']['userids'][0]) 
     #}}}
     # user
     #{{{user_get
@@ -1035,7 +1119,6 @@ if __name__ == "__main__":
     parser.add_argument('-G','--group',nargs='?',metavar=('GroupName'),dest='listgroup',default='group',help='查询主机组')
     parser.add_argument('--hostgroup_add',nargs=1,dest='hostgroup_add',help='添加主机组')
     parser.add_argument('-H','--host',nargs='?',metavar=('HostName'),dest='listhost',default='host',help='查询主机')
-    parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history_get',nargs=4,metavar=('history','item_ID','time_from','time_till'),dest='history_get',help='查询history')
     parser.add_argument('--history_report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='history_report',help='zabbix_api.py \
@@ -1044,6 +1127,9 @@ if __name__ == "__main__":
     parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
                         help='export data to xls')
     parser.add_argument('--trend_get',nargs=1,metavar=('item_ID'),dest='trend_get',help='查询item trend')
+    # template
+    parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
+    parser.add_argument('--template_import',dest='template_import',nargs=1,metavar=('templatePath'),help='import template')
     # user
     parser.add_argument('--usergroup',nargs='?',metavar=('name'),default='usergroup',dest='usergroup',help='Inquire usergroup ID')
     parser.add_argument('--usergroup_add',dest='usergroup_add',nargs=2,metavar=('usergroupName','hostgroupName'),help='add usergroup')
@@ -1080,11 +1166,6 @@ if __name__ == "__main__":
                 zabbix.hostgroup_get(args.listgroup)
             else:
                 zabbix.hostgroup_get()
-        if args.listtemp != 'template':
-            if args.listtemp:
-                zabbix.template_get(args.listtemp)
-            else:
-                zabbix.template_get()
         if args.usergroup != 'usergroup':
             if args.usergroup:
                 zabbix.usergroup_get(args.usergroup)
@@ -1110,6 +1191,21 @@ if __name__ == "__main__":
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
             zabbix.host_create(args.addhost[0], args.addhost[1], args.addhost[2])
+        ############
+        # template
+        ############
+        if args.listtemp != 'template':
+            if args.listtemp:
+                zabbix.template_get(args.listtemp)
+            else:
+                zabbix.template_get()
+        if args.template_import:
+            with open(args.template_import[0], 'r') as f:
+                template = f.read()
+                try:
+                    zabbix.configuration_import(template)
+                except ZabbixAPIException as e:
+                    print e
         ############
         # user
         ############
