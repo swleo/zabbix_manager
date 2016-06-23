@@ -1,11 +1,10 @@
-# zabbix_manager
+# zabbix_manager(server)
 ## language selection
 
 [中文](https://github.com/BillWang139967/zabbix_manager/blob/master/README.zh.md)
 [English](https://github.com/BillWang139967/zabbix_manager/blob/master/README.md)
 
 ## Supported versions
-> * zabbix2.4
 > * zabbix3.0
 
 ## 【contents】
@@ -137,6 +136,7 @@ password = zabbix
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_del.jpg)
 <h2 name="3">3 version</h2>
 ----
+* v1.0.6，2016-06-23 add rule and discovery manage
 * v1.0.5，2016-06-19 add mediatype manage
 * v1.0.4，2016-06-18 add usergroup manage
 * v1.0.3，2016-06-11 add history_report

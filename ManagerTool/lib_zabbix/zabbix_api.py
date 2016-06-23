@@ -1112,6 +1112,242 @@ class zabbix_api:
             result.close() 
             print "mediatype \033[042m %s\033[0m  delete OK !"% mediatypeName 
     #}}}
+    # drule(discoveryRules)
+    #{{{drule_get
+    def drule_get(self,druleName=''): 
+        data=json.dumps({
+                "jsonrpc": "2.0",
+                "method": "drule.get",
+                "params": {
+                          "output": "extend",
+                          "filter":{"name":druleName} 
+                          },
+                "auth": self.user_login(),
+                "id": 1
+                })
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            if hasattr(e, 'reason'): 
+                print 'We failed to reach a server.' 
+                print 'Reason: ', e.reason 
+            elif hasattr(e, 'code'): 
+                print 'The server could not fulfill the request.' 
+                print 'Error code: ', e.code 
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            print "drule sum: \033[31m%s\033[0m"%(len(response['result']))
+            if not len(druleName):
+                if self.terminal_table:
+                    table_show=[]
+                    table_show.append(["druleid","name","iprange","status"])
+                else:
+                    print "druleid","name","iprange","status"
+
+            if len(response['result']) == 0:
+                return 0
+            status={"0":Color('{autobggreen}Enabled{/autobggreen}'),"1":Color('{autobgred}Disabled{/autobgred}')}
+            for drule in response['result']:      
+                if len(druleName)==0:
+                    if self.terminal_table:
+                        table_show.append([drule['druleid'],drule['name'],drule['iprange'],status[drule['status']]])
+                    else:
+                        print drule['druleid'],drule['name'],drule['iprange'],status[drule['status']]
+                else:
+                    return drule['druleid']
+            if self.terminal_table:
+                table=SingleTable(table_show)
+                print(table.table)
+    #}}}
+    #{{{drule_create
+    def drule_create(self, druleName,iprange): 
+        if self.drule_get(druleName):
+            print "\033[041mthis druleName is exists\033[0m" 
+            sys.exit(1)
+
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"drule.create", 
+                           "params": {
+                               "name": druleName,
+                               "iprange": iprange,
+                               "dchecks": [
+                                           {
+                                               "type": "9",
+                                               "key_": "system.uname",
+                                               "ports": "10050",
+                                               "uniq": "0"
+                                            }
+                                          ]
+                                      },
+                           "auth": self.user_login(), 
+                           "id":1                   
+        }) 
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+            #print response
+            print "add drule : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (druleName, response['result']['druleids'][0]) 
+    #}}}
+    # action
+    # eventsource 0 triggers
+    # eventsource 1 discovery
+    # eventsource 2 auto registration
+    # eventsource 3 internal
+    #{{{action_get
+    def action_get(self,actionName=''): 
+        data=json.dumps({
+                "jsonrpc": "2.0",
+                "method": "action.get",
+                "params": {
+                          "output": "extend",
+                          "filter":{
+                              "name":actionName,
+                          } 
+                          },
+                "auth": self.user_login(),
+                "id": 1
+                })
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            if hasattr(e, 'reason'): 
+                print 'We failed to reach a server.' 
+                print 'Reason: ', e.reason 
+            elif hasattr(e, 'code'): 
+                print 'The server could not fulfill the request.' 
+                print 'Error code: ', e.code 
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            print "drule sum: \033[31m%s\033[0m"%(len(response['result']))
+            if not len(actionName):
+                if self.terminal_table:
+                    table_show=[]
+                    table_show.append(["actionid","name","eventsource","status"])
+                else:
+                    print "actionid","name","eventsource","status"
+
+            if len(response['result']) == 0:
+                return 0
+            status={"0":Color('{autobggreen}Enabled{/autobggreen}'),"1":Color('{autobgred}Disabled{/autobgred}')}
+            eventsource={"0":"triggers","1":"discovery","2":"registration","3":"internal"}
+            for action in response['result']:      
+                if len(actionName)==0:
+                    if self.terminal_table:
+                        table_show.append([action['actionid'],action['name'],eventsource[action['eventsource']],status[action['status']]])
+                    else:
+                        print action['actionid'],action['name'],eventsource[action['eventsource']],status[action['status']]
+                else:
+                    return action['druleid']
+            if self.terminal_table:
+                table=SingleTable(table_show)
+                print(table.table)
+    #}}}
+    #{{{action_discovery_create
+    def action_discovery_create(self, actionName,hostgroupName): 
+        if self.drule_get(actionName):
+            print "\033[041mthis druleName is exists\033[0m" 
+            sys.exit(1)
+
+        hostgroupID = self.hostgroup_get(hostgroupName)
+        if not hostgroupID:
+            print "this hostgroup is not exists"
+            exit(1)
+        templateName = "Template OS Linux"
+        templateID=self.template_get(templateName)
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"action.create", 
+                           "params": {
+                               "name": actionName,
+                               "eventsource": 1,
+                               "status": 0,
+                               "esc_period": 0,
+                               "filter": {
+                                   "evaltype": 0,
+                                   "conditions": [
+                                        {
+                                            "conditiontype": 12,
+                                            "operator": 2,
+                                            "value": "Linux"
+                                        },
+                                        {
+                                            "conditiontype":10,
+                                            "operator": 0,
+                                            "value":"0"
+                                        },
+                                        {
+                                            "conditiontype":8,
+                                            "operator": 0,
+                                            "value":"9"
+                                        }
+                                   ]
+                               },
+                               "operations": [
+                                    {
+                                        "operationtype": 2,
+                                        "esc_step_from": 1,
+                                        "esc_period": 0,
+                                        "esc_step_to": 1
+                                    },
+                                    {
+                                        "operationtype": 4,
+                                        "esc_step_from": 2,
+                                        "esc_period": 0,
+                                        "opgroup": [
+                                            {
+                                                "groupid":hostgroupID
+                                            }
+                                        ],
+                                        "esc_step_to": 2
+                                    },
+                                    {
+                                        "operationtype": 6,
+                                        "esc_step_from": 3,
+                                        "esc_period": 0,
+                                        "optemplate": [
+                                            {
+                                                "templateid":templateID
+                                            }
+                                        ],
+                                        "esc_step_to": 3
+                                    }
+                                ]
+                           },
+                           "auth": self.user_login(), 
+                           "id":1                   
+        }) 
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+            print "add action : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" %(actionName, response['result']['actionids'][0]) 
+    #}}}
 
 
 if __name__ == "__main__":
@@ -1140,10 +1376,23 @@ if __name__ == "__main__":
     parser.add_argument('--mediatype',nargs='?',metavar=('name'),default='mediatype',dest='mediatype',help='Inquire mediatype')
     parser.add_argument('--mediatype_add',dest='mediatype_add',nargs=2,metavar=('mediaName','scriptName'),help='add mediatype script')
     parser.add_argument('--mediatype_del',dest='mediatype_del',nargs=1,metavar=('mediatypeName'),help='delete mediatype')
+    # drule
+    parser.add_argument('--drule',nargs='?',metavar=('name'),default='drule',dest='drule',\
+                        help='Inquire drule')
+    parser.add_argument('--drule_add',dest='drule_add',nargs=2,metavar=('druleName','iprange'),\
+                        help='add drule')
+    parser.add_argument('--drule_del',dest='drule_del',nargs=1,metavar=('druleName'),\
+                        help='delete drule')
+    # action
+    parser.add_argument('--action',nargs='?',metavar=('name'),default='action',dest='action',\
+                        help='Inquire action')
+    parser.add_argument('--action_discovery_add',dest='action_discovery_add',nargs=2,metavar=('actionName','hostgroupName'),\
+                        help='add action')
+
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
     parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.5')
+    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.6')
     if len(sys.argv)==1:
         print parser.print_help()
     else:
@@ -1191,6 +1440,30 @@ if __name__ == "__main__":
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
             zabbix.host_create(args.addhost[0], args.addhost[1], args.addhost[2])
+        ############
+        # drule
+        ############
+        if args.drule != 'drule':
+            if args.drule:
+                zabbix.drule_get(args.drule)
+            else:
+                zabbix.drule_get()
+        if args.drule_add:
+            zabbix.drule_create(args.drule_add[0],\
+                               args.drule_add[1]\
+                              )
+        ############
+        # action
+        ############
+        if args.action != 'action':
+            if args.action:
+                zabbix.action_get(args.action)
+            else:
+                zabbix.action_get()
+        if args.action_discovery_add:
+            zabbix.action_discovery_create(args.action_discovery_add[0],\
+                                           args.action_discovery_add[1]\
+                              )
         ############
         # template
         ############
