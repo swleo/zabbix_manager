@@ -1356,7 +1356,7 @@ if __name__ == "__main__":
     parser.add_argument('--hostgroup_add',nargs=1,dest='hostgroup_add',help='添加主机组')
     parser.add_argument('-H','--host',nargs='?',metavar=('HostName'),dest='listhost',default='host',help='查询主机')
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
-    parser.add_argument('--history_get',nargs=4,metavar=('history','item_ID','time_from','time_till'),dest='history_get',help='查询history')
+    parser.add_argument('--history_get',nargs=4,metavar=('history_type','item_ID','time_from','time_till'),dest='history_get',help='查询history')
     parser.add_argument('--history_report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='history_report',help='zabbix_api.py \
                         --history_report 0 "CPU idle time" "2016-06-03" "2016-06-10"')
     parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
