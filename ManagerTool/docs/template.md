@@ -1,9 +1,6 @@
 # configure template
 
 
-[返回主页](https://github.com/BillWang139967/zabbix_manager/tree/master/ManagerTool)
-
-
 <h2 name="1.2">1.2 配置模板</h2>
 
 <h3>(1)修改配置文件zabbix_config.ini</h3>

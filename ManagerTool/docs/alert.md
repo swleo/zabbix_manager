@@ -1,9 +1,6 @@
 # configure alert
 
 
-[返回主页](https://github.com/BillWang139967/zabbix_manager/tree/master/ManagerTool)
-
-
 <h2 name="1.1">1.1 配置报警</h2>
 
 <h3>(1)修改配置文件zabbix_config.ini</h3>

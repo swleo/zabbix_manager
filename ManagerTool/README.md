@@ -4,9 +4,9 @@
 ----
 
 [1 配置 ]  
-........[1.1 配置报警](ManagerTool/docs/alert.md)  
-........[1.2 导入模板](ManagerTool/docs/template.md)  
-........[1.3 配置自动发现规则](https://github.com/BillWang139967/zabbix_manager/tree/master/ManagerTool/docs/config.md)  
+........[1.1 配置报警](docs/alert.md)  
+........[1.2 导入模板](docs/template.md)  
+........[1.3 配置自动发现规则](docs/config.md)  
 
 
 配置报警----------------zabbix的管理板块
