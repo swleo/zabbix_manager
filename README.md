@@ -1,8 +1,8 @@
 # zabbix_manager(server)
 ## language selection
 
-[中文](https://github.com/BillWang139967/zabbix_manager/blob/master/README.zh.md)
-[English](https://github.com/BillWang139967/zabbix_manager/blob/master/README.md)
++ [中文](https://github.com/BillWang139967/zabbix_manager/blob/master/README.zh.md)
++ [English](https://github.com/BillWang139967/zabbix_manager/blob/master/README.md)
 
 ## Supported versions
 > * zabbix3.0
@@ -143,6 +143,31 @@ password = zabbix
 * v1.0.2，2016-06-03 Modify the command line in interactive mode
 * v1.0.1，2016-04-16 First edit
 
+
+## 参加步骤
+
+* 在 GitHub 上 `fork` 到自己的仓库，然后 `clone` 到本地，并设置用户信息。
+```
+$ git clone https://github.com/BillWang139967/zabbix_manager.git
+$ cd zabbix_manager
+$ git config user.name "yourname"
+$ git config user.email "your email"
+```
+* 修改代码后提交，并推送到自己的仓库。
+```
+$ #do some change on the content
+$ git commit -am "Fix issue #1: change helo to hello"
+$ git push
+```
+* 在 GitHub 网站上提交 pull request。
+* 定期使用项目仓库内容更新自己仓库内容。
+```
+$ git remote add upstream https://github.com/BillWang139967/zabbix_manager.git
+$ git fetch upstream
+$ git checkout master
+$ git rebase upstream/master
+$ git push -f origin master
+```
 ## 致谢
 
 1. 感谢南非蜘蛛的指导

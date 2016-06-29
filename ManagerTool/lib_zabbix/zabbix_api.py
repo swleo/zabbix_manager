@@ -12,6 +12,7 @@ from terminaltables import SingleTable
 import my_sort
 import time
 import my_compare
+import unicodedata
 import XLSWriter
 #{{{logging
 import logging 
@@ -425,7 +426,8 @@ class zabbix_api:
                                      "output": "extend",
                                      "history": history,
                                      "itemids": item_ID,
-                                     "limit": 50000
+                                     "sortfield":"clock",
+                                     "limit": 10080
                                      }, 
                            "auth":self.user_login(), 
                            "id":1, 
@@ -439,6 +441,7 @@ class zabbix_api:
             print "Error as ", e 
         else: 
             response = json.loads(result.read()) 
+            #print response
             result.close() 
             if len(response['result']) == 0:
                 debug_info=str([history,item_ID,time_from,time_till,"####not have history_data"])
@@ -487,7 +490,7 @@ class zabbix_api:
             err_msg("时间格式 ['2016-05-01'] ['2016-06-01']")
 
         if export_xls[0] == 'ON':
-            xlswriter = XLSWriter.XLSWriter(export_xls[2])
+            xlswriter = XLSWriter.XLSWriter(export_xls[1])
             xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
             xlswriter.add_header(u"报告周期:"+sheetName,8,sheet_name=sheetName)
             xlswriter.setcol_width([10, 20, 20,10,20,10,10,10],sheet_name=sheetName)
@@ -525,6 +528,157 @@ class zabbix_api:
                     print host_info[0],'\t',host_info[1],'\t',host_info[2],'\t',itemid,item_name,'\t',history_min,'\t',history_max,'\t',history_avg
                 if export_xls[0] == "ON":
                     xlswriter.writerow([host_info[0],host_info[1],host_info[2],itemid,item_name,history_min,history_max,history_avg],sheet_name=sheetName,border=True)
+        print
+        if self.terminal_table:
+            table=SingleTable(table_show)
+            table.title = itemName
+            print(table.table)
+        if export_xls[0] == 'ON':
+            xlswriter.save()
+        return 0
+ #}}}
+    #{{{agent_ping
+    def agent_ping(self,item_ID='',time_from='',time_till=''): 
+        history_data=[]
+        history_data[:]=[]
+              
+        #print history,item_ID,time_from,time_till     
+        #data = json.dumps({ 
+        #                   "jsonrpc":"2.0", 
+        #                   "method":"history.get", 
+        #                   "params":{ 
+        #                             "time_from":time_from,
+        #                             "time_till":time_till,
+        #                             "output": "extend",
+        #                             "history": 3,
+        #                             "itemids": item_ID,
+        #                             "sortfield":"clock",
+        #                             "limit": 10080
+        #                             }, 
+        #                   "auth":self.user_login(), 
+        #                   "id":1, 
+        #                   }) 
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"trend.get", 
+                           "params":{ 
+                               "time_from":time_from,
+                               "time_till":time_till,
+                               "output":[
+                                   "itemid",
+                                   "clock",
+                                   "num",
+                                   "value_min",
+                                   "value_avg",
+                                   "value_max"
+                                        ],
+                               "itemids":item_ID,
+                               "limit":"8760"
+                                     }, 
+
+                           "auth":self.user_login(), 
+                           "id":1, 
+                           }) 
+
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            response = json.loads(result.read()) 
+            #print response
+            result.close() 
+            if len(response['result']) == 0:
+                debug_info=str([item_ID,time_from,time_till,"####not have history_data"])
+                logging.debug(debug_info)
+                return 0,0
+            sum_value = 0
+            for result_info in response['result']:
+                hour_num_string = unicodedata.normalize('NFKD',result_info['num']).encode('ascii','ignore')
+                hour_num=eval(hour_num_string)
+                sum_value = sum_value + hour_num
+                debug_info=str([result_info['num']])
+                logging.debug(debug_info)
+            trend_sum = len(response['result'])
+            return trend_sum,sum_value
+
+    #}}}
+    #{{{report_available
+    ##
+    # @brief report_available
+    #
+    # @param history
+    # @param itemName
+    # @param date_from
+    # @param date_till
+    # @param export_xls ["OFF","ceshi.xls"]
+    #
+    # @return 
+    def report_available(self,date_from,date_till,export_xls): 
+        dateFormat = "%Y-%m-%d %H:%M:%S"
+        #dateFormat = "%Y-%m-%d"
+        check_time=60
+        hour_check_num = int(3600/check_time)
+        try:
+            startTime =  time.strptime(date_from,dateFormat)
+            endTime =  time.strptime(date_till,dateFormat)
+            sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
+            info_msg=str(sheetName)
+            logging.info(info_msg)
+        except:
+            err_msg("时间格式 ['2016-05-01'] ['2016-06-01']")
+
+        if export_xls[0] == 'ON':
+            xlswriter = XLSWriter.XLSWriter(export_xls[1])
+            xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+            xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
+            xlswriter.setcol_width([10,20,20,10,10,10],sheet_name=sheetName)
+            xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
+        time_from = int(time.mktime(startTime))
+        time_till = int(time.mktime(endTime))
+        if time_from > time_till:
+            err_msg("date_till must after the date_from time")
+
+        if self.terminal_table:
+            table_show=[]
+            table_show.append([u"hostid",u"资源类型",u"itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"])
+        else:
+            print "hostid",'\t',u"资源类型",'\t',"itemName",'\t',u"期望值(%)",'\t',u"平均值(%)",'\t',u"差值(%)"
+        host_list = self._host_get()
+        itemName="Agent ping"
+        for host_info in host_list: 
+            itemid_all_list = self.item_get(host_info[0],"Agent ping")
+            if itemid_all_list == 0:
+                continue
+            for itemid_sub_list in itemid_all_list:
+                
+                itemid=itemid_sub_list[0]
+                item_name=itemid_sub_list[1]
+                item_key=itemid_sub_list[2]
+                debug_msg="itemid:%s"%itemid
+                logging.debug(debug_msg)
+                
+                #history_min,history_max,history_avg = self.agent_ping(itemid,time_from,time_till)
+                trend_sum,sum_value = self.agent_ping(itemid,time_from,time_till)
+                if (sum_value > 0) and (trend_sum > 0):
+                    sum_value = float(sum_value*100)
+                    sum_check=trend_sum*hour_check_num
+                    avg_ping=sum_value/sum_check
+                    if avg_ping == 100:
+                        avg_ping =int(avg_ping)
+                    else:
+                        avg_ping=float('%0.2f'% avg_ping)
+                    diff_ping = avg_ping - 100
+
+                if self.terminal_table:
+                    table_show.append([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)])
+                else:
+                    print host_info[0],'\t',host_info[2],'\t',itemName,'\t',"100",'\t',avg_ping,'\t',diff_ping
+                if export_xls[0] == "ON":
+                    xlswriter.writerow([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)],sheet_name=sheetName,border=True)
         print
         if self.terminal_table:
             table=SingleTable(table_show)
@@ -613,7 +767,7 @@ class zabbix_api:
                                    "value_max"
                                         ],
                                "itemids":itemID,
-                               "limit":"20"
+                               "limit":"8760"
                                      }, 
 
                            "auth":self.user_login(), 
@@ -1359,6 +1513,8 @@ if __name__ == "__main__":
     parser.add_argument('--history_get',nargs=4,metavar=('history_type','item_ID','time_from','time_till'),dest='history_get',help='查询history')
     parser.add_argument('--history_report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='history_report',help='zabbix_api.py \
                         --history_report 0 "CPU idle time" "2016-06-03" "2016-06-10"')
+    parser.add_argument('--report_available',nargs=2,metavar=('date_from','date_till'),dest='report_available',help='\
+                        --report_available "2016-06-03" "2016-06-10"')
     parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
     parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
                         help='export data to xls')
@@ -1436,6 +1592,8 @@ if __name__ == "__main__":
             zabbix.trend_get(args.trend_get[0])
         if args.history_report:
             zabbix.history_report(args.history_report[0],args.history_report[1],args.history_report[2],args.history_report[3],export_xls)
+        if args.report_available:
+            zabbix.report_available(args.report_available[0],args.report_available[1],export_xls)
         if args.hostgroup_add:
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
