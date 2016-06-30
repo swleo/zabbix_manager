@@ -335,6 +335,37 @@ class zabbix_api:
                 return group['groupid'] 
 
     #}}}
+    #{{{hostgroup_create
+    def hostgroup_create(self,hostgroupName):
+
+        if self.hostgroup_get(hostgroupName):
+            print "hostgroup  \033[42m%s\033[0m is exist !"%hostgroupName
+            sys.exit(1)
+        data = json.dumps({
+                          "jsonrpc": "2.0",
+                          "method": "hostgroup.create",
+                          "params": {
+                          "name": hostgroupName
+                          },
+                          "auth": self.user_login(),
+                          "id": 1
+                          })
+        request=urllib2.Request(self.url,data)
+
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request)
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            response = json.loads(result.read()) 
+            result.close()
+            print "\033[042m 添加主机组:%s\033[0m  hostgroupID : %s"%(hostgroupName,response['result']['groupids'])
+
+
+    #}}}
     # item
     #{{{item_get
     ##
@@ -411,7 +442,7 @@ class zabbix_api:
 
     #}}}
     # history
-    #{{{history_get
+    #{{{history_get(invalid)
     def history_get(self,history='',item_ID='',time_from='',time_till=''): 
         history_data=[]
         history_data[:]=[]
@@ -466,20 +497,20 @@ class zabbix_api:
             return (history_min,history_max,history_avg)
 
     #}}}
-    #{{{history_report
+    #{{{report
     ##
-    # @brief history_report 
+    # @brief report 
     #
     # @param history
     # @param itemName
     # @param date_from
     # @param date_till
-    # @param export_xls ["OFF","ceshi.xls"]
+    # @param export_xls 
     #
     # @return 
-    def history_report(self,history,itemName,date_from,date_till,export_xls): 
-        #dateFormat = "%Y-%m-%d %H:%M:%S"
-        dateFormat = "%Y-%m-%d"
+    def report(self,history,itemName,date_from,date_till,export_xls): 
+        dateFormat = "%Y-%m-%d %H:%M:%S"
+        #dateFormat = "%Y-%m-%d"
         try:
             startTime =  time.strptime(date_from,dateFormat)
             endTime =  time.strptime(date_till,dateFormat)
@@ -489,22 +520,26 @@ class zabbix_api:
         except:
             err_msg("时间格式 ['2016-05-01'] ['2016-06-01']")
 
-        if export_xls[0] == 'ON':
-            xlswriter = XLSWriter.XLSWriter(export_xls[1])
-            xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
-            xlswriter.add_header(u"报告周期:"+sheetName,8,sheet_name=sheetName)
-            xlswriter.setcol_width([10, 20, 20,10,20,10,10,10],sheet_name=sheetName)
-            xlswriter.writerow(["hostid","hostname","name","itemid","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
-        time_from = int(time.mktime(startTime))
+        if export_xls["xls"] == 'ON':
+            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
+            if export_xls["title"] == 'ON':
+                xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
+            else:
+                xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+
+            xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
+            xlswriter.setcol_width([20,  20,20,10,10,10],sheet_name=sheetName)
+            xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
+        time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
             err_msg("date_till must after the date_from time")
 
         if self.terminal_table:
             table_show=[]
-            table_show.append(["hostid","hostname","name","itemid","itemName","min","max","avg"])
+            table_show.append(["hostid","name","itemName","min","max","avg"])
         else:
-            print "hostid",'\t',"hostname",'\t',"name",'\t',"itemid",'\t',"itemName",'\t',"min",'\t',"max","avg"
+            print "hostid",'\t',"name",'\t',"itemName",'\t',"min",'\t',"max","avg"
         host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
@@ -517,23 +552,28 @@ class zabbix_api:
                 debug_msg="itemid:%s"%itemid
                 logging.debug(debug_msg)
                 
-                history_min,history_max,history_avg = self.history_get(history,itemid,time_from,time_till)
-                history_min=str(history_min)
-                history_max=str(history_max)
-                history_avg=str(history_avg)
+                report_min,report_max,report_avg = self.trend_get(itemid,time_from,time_till)
+                #history_min,history_max,history_avg = self.history_get(history,itemid,time_from,time_till)
+                if history==3:
+                    report_min=int(report_min)
+                    report_max=int(report_max)
+                    report_avg=int(report_avg)
+                report_min=str(report_min)
+                report_max=str(report_max)
+                report_avg=str(report_avg)
                 itemid=str(itemid)
                 if self.terminal_table:
-                    table_show.append([host_info[0],host_info[1],host_info[2],itemid,item_name,history_min,history_max,history_avg])
+                    table_show.append([host_info[0],host_info[2],item_name,report_min,report_max,report_avg])
                 else:
-                    print host_info[0],'\t',host_info[1],'\t',host_info[2],'\t',itemid,item_name,'\t',history_min,'\t',history_max,'\t',history_avg
-                if export_xls[0] == "ON":
-                    xlswriter.writerow([host_info[0],host_info[1],host_info[2],itemid,item_name,history_min,history_max,history_avg],sheet_name=sheetName,border=True)
+                    print host_info[0],'\t',host_info[2],'\t',itemid,item_name,'\t',report_min,'\t',report_max,'\t',report_avg
+                if export_xls["xls"] == "ON":
+                    xlswriter.writerow([host_info[0],host_info[2],item_name,report_min,report_max,report_avg],sheet_name=sheetName,border=True)
         print
         if self.terminal_table:
             table=SingleTable(table_show)
             table.title = itemName
             print(table.table)
-        if export_xls[0] == 'ON':
+        if export_xls["xls"] == 'ON':
             xlswriter.save()
         return 0
  #}}}
@@ -614,7 +654,7 @@ class zabbix_api:
     # @param itemName
     # @param date_from
     # @param date_till
-    # @param export_xls ["OFF","ceshi.xls"]
+    # @param export_xls
     #
     # @return 
     def report_available(self,date_from,date_till,export_xls): 
@@ -631,13 +671,16 @@ class zabbix_api:
         except:
             err_msg("时间格式 ['2016-05-01'] ['2016-06-01']")
 
-        if export_xls[0] == 'ON':
-            xlswriter = XLSWriter.XLSWriter(export_xls[1])
-            xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+        if export_xls["xls"] == 'ON':
+            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
+            if export_xls["title"] == 'ON':
+                xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
+            else:
+                xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
             xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
             xlswriter.setcol_width([10,20,20,10,10,10],sheet_name=sheetName)
             xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
-        time_from = int(time.mktime(startTime))
+        time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
             err_msg("date_till must after the date_from time")
@@ -677,48 +720,17 @@ class zabbix_api:
                     table_show.append([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)])
                 else:
                     print host_info[0],'\t',host_info[2],'\t',itemName,'\t',"100",'\t',avg_ping,'\t',diff_ping
-                if export_xls[0] == "ON":
+                if export_xls["xls"] == "ON":
                     xlswriter.writerow([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)],sheet_name=sheetName,border=True)
         print
         if self.terminal_table:
             table=SingleTable(table_show)
             table.title = itemName
             print(table.table)
-        if export_xls[0] == 'ON':
+        if export_xls["xls"] == 'ON':
             xlswriter.save()
         return 0
  #}}}
-    #{{{hostgroup_create
-    def hostgroup_create(self,hostgroupName):
-
-        if self.hostgroup_get(hostgroupName):
-            print "hostgroup  \033[42m%s\033[0m is exist !"%hostgroupName
-            sys.exit(1)
-        data = json.dumps({
-                          "jsonrpc": "2.0",
-                          "method": "hostgroup.create",
-                          "params": {
-                          "name": hostgroupName
-                          },
-                          "auth": self.user_login(),
-                          "id": 1
-                          })
-        request=urllib2.Request(self.url,data)
-
-        for key in self.header: 
-            request.add_header(key, self.header[key]) 
-              
-        try: 
-            result = urllib2.urlopen(request)
-        except URLError as e: 
-            print "Error as ", e 
-        else: 
-            response = json.loads(result.read()) 
-            result.close()
-            print "\033[042m 添加主机组:%s\033[0m  hostgroupID : %s"%(hostgroupName,response['result']['groupids'])
-
-
-    #}}}
     #{{{alert_get
     def alert_get(self):
         data=json.dumps({
@@ -753,7 +765,89 @@ class zabbix_api:
     # @param itemID
     #
     # @return itemid
-    def trend_get(self,itemID=''): 
+    def trend_get(self,itemID='',time_from='',time_till=''): 
+        trend_min_data=[]
+        trend_max_data=[]
+        trend_avg_data=[]
+        trend_min_data[:]=[]
+        trend_max_data[:]=[]
+        trend_avg_data[:]=[]
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"trend.get", 
+                           "time_from":time_from,
+                           "time_till":time_till,
+                           "params":{ 
+                               "output":[
+                                   "itemid",
+                                   "clock",
+                                   "num",
+                                   "value_min",
+                                   "value_avg",
+                                   "value_max"
+                                        ],
+                               "itemids":itemID,
+                               "limit":"8760"
+                                     }, 
+
+                           "auth":self.user_login(), 
+                           "id":1, 
+                           }) 
+         
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            if len(response['result']) == 0:
+                debug_info=str([itemID,time_from,time_till,"####not have trend_data"])
+                logging.debug(debug_info)
+                return 0.0,0.0,0.0
+            for result_info in response['result']:
+                #print type(result_info['value_min'])
+                #if not cmp(result_info['value_min'], '0.0'):
+                #if result_info['value_min'] == "0.0000":
+                #    print result_info['value_min']
+                #    debug_info=str([result_info])
+                #    logging.debug(debug_info)
+                #else:
+                #    trend_min_data.append(result_info['value_min'])
+                trend_min_data.append(result_info['value_min'])
+                    
+                trend_max_data.append(result_info['value_max'])
+                trend_avg_data.append(result_info['value_avg'])
+            trend_min_data_all=my_sort.Stats(trend_min_data)
+            trend_max_data_all=my_sort.Stats(trend_max_data)
+            trend_avg_data_all=my_sort.Stats(trend_avg_data)
+            #print trend_min_data
+            #print trend_max_data
+            #print trend_avg_data
+            trend_min=trend_min_data_all.min()
+            trend_max=trend_max_data_all.max()
+            trend_avg=float('%0.4f'% trend_avg_data_all.avg())
+            
+            #if history == '3':
+            #    history_min = int(history_min)
+            #    history_max = int(history_max)
+            #    history_avg = int(history_avg)
+            #debug_info=str([history,item_ID,time_from,time_till,history_min,history_max,history_avg])
+            #logging.debug(debug_info)
+            return (trend_min,trend_max,trend_avg)
+    #}}}
+    #{{{trend_get
+    ##
+    # @brief trend_get 
+    #
+    # @param itemID
+    #
+    # @return itemid
+    def trend_get_(self,itemID=''): 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"trend.get", 
@@ -1511,13 +1605,15 @@ if __name__ == "__main__":
     parser.add_argument('-H','--host',nargs='?',metavar=('HostName'),dest='listhost',default='host',help='查询主机')
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history_get',nargs=4,metavar=('history_type','item_ID','time_from','time_till'),dest='history_get',help='查询history')
-    parser.add_argument('--history_report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='history_report',help='zabbix_api.py \
-                        --history_report 0 "CPU idle time" "2016-06-03" "2016-06-10"')
+    parser.add_argument('--report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='report',help='\
+                        --report 0 "CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_available',nargs=2,metavar=('date_from','date_till'),dest='report_available',help='\
                         --report_available "2016-06-03" "2016-06-10"')
     parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
     parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
                         help='export data to xls')
+    parser.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
+                        help="add the xls's title")
     parser.add_argument('--trend_get',nargs=1,metavar=('item_ID'),dest='trend_get',help='查询item trend')
     # template
     parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
@@ -1557,10 +1653,20 @@ if __name__ == "__main__":
         if args.terminal_table != "OFF":
             terminal_table = True
         zabbix=zabbix_api(terminal_table)
-        export_xls = ["OFF","ceshi.xls"]
+        export_xls = {"xls":"OFF",
+                      "xls_name":"ceshi.xls",
+                      "title":"OFF",
+                      "title_name":u"测试"
+        }
         if args.xls:
-            export_xls[0] = 'ON'
-            export_xls[1]=args.xls[0]
+            export_xls["xls"] = 'ON'
+            export_xls["xls_name"]=args.xls[0]
+        if args.title:
+            if export_xls["xls"] == "ON":
+                export_xls["title"] = 'ON'
+                export_xls["title_name"]=unicode(args.title[0],"utf-8")
+            else:
+                print "the title params invalid"
         if args.listhost != 'host' :
             if args.listhost:
                 zabbix.host_get(args.listhost)
@@ -1590,8 +1696,8 @@ if __name__ == "__main__":
             zabbix.history_get(args.history_get[0],args.history_get[1],args.history_get[2],args.history_get[3])
         if args.trend_get:
             zabbix.trend_get(args.trend_get[0])
-        if args.history_report:
-            zabbix.history_report(args.history_report[0],args.history_report[1],args.history_report[2],args.history_report[3],export_xls)
+        if args.report:
+            zabbix.report(args.report[0],args.report[1],args.report[2],args.report[3],export_xls)
         if args.report_available:
             zabbix.report_available(args.report_available[0],args.report_available[1],export_xls)
         if args.hostgroup_add:
