@@ -678,7 +678,7 @@ class zabbix_api:
             else:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
             xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
-            xlswriter.setcol_width([10,20,20,10,10,10],sheet_name=sheetName)
+            xlswriter.setcol_width([20,20,20,10,10,10],sheet_name=sheetName)
             xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
