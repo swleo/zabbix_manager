@@ -93,7 +93,6 @@ class zabbix_api:
     #{{{host_get
     ##
     # @brief host_get 
-    #
     # @param hostName
     #
     # @return 
@@ -150,17 +149,52 @@ class zabbix_api:
 
     #}}}
     #{{{_host_get
-    def _host_get(self): 
+    #  (1)Return all hosts.
+    #  (2)Return only hosts that belong to the given groups.
+    #  (3)Return only hosts with the given host IDs.
+    def _host_get(self,hostgroupID='',hostID=''): 
         host_list=[]
-        data=json.dumps({
-                "jsonrpc": "2.0",
-                "method": "host.get",
-                "params": {
-                          "output": "extend",
-                          },
-                "auth": self.user_login(),
-                "id": 1
-                })
+        if hostgroupID:
+            group_list=[]
+            group_list[:]=[]
+            for i in hostgroupID.split(','):
+                group_list.append(i)
+            data=json.dumps({
+                    "jsonrpc": "2.0",
+                    "method": "host.get",
+                    "params": {
+                              "groupids":group_list,
+                              "output": "extend",
+                              },
+                    "auth": self.user_login(),
+                    "id": 1
+                    })
+        elif hostID:
+            host_list=[]
+            host_list[:]=[]
+            for i in hostID.split(','):
+                host_list.append(i)
+            data=json.dumps({
+                    "jsonrpc": "2.0",
+                    "method": "host.get",
+                    "params": {
+                              "hostids":host_list,
+                              "output": "extend",
+                              },
+                    "auth": self.user_login(),
+                    "id": 1
+                    })
+        else:
+            data=json.dumps({
+                    "jsonrpc": "2.0",
+                    "method": "host.get",
+                    "params": {
+                              "output": "extend",
+                              },
+                    "auth": self.user_login(),
+                    "id": 1
+                    })
+
         request = urllib2.Request(self.url,data) 
         for key in self.header: 
             request.add_header(key, self.header[key]) 
@@ -657,7 +691,7 @@ class zabbix_api:
     # @param export_xls
     #
     # @return 
-    def report_available(self,date_from,date_till,export_xls): 
+    def report_available(self,itemName,date_from,date_till,export_xls): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         #dateFormat = "%Y-%m-%d"
         check_time=60
@@ -691,9 +725,8 @@ class zabbix_api:
         else:
             print "hostid",'\t',u"资源类型",'\t',"itemName",'\t',u"期望值(%)",'\t',u"平均值(%)",'\t',u"差值(%)"
         host_list = self._host_get()
-        itemName="Agent ping"
         for host_info in host_list: 
-            itemid_all_list = self.item_get(host_info[0],"Agent ping")
+            itemid_all_list = self.item_get(host_info[0],itemName)
             if itemid_all_list == 0:
                 continue
             for itemid_sub_list in itemid_all_list:
@@ -839,50 +872,6 @@ class zabbix_api:
             #debug_info=str([history,item_ID,time_from,time_till,history_min,history_max,history_avg])
             #logging.debug(debug_info)
             return (trend_min,trend_max,trend_avg)
-    #}}}
-    #{{{trend_get
-    ##
-    # @brief trend_get 
-    #
-    # @param itemID
-    #
-    # @return itemid
-    def trend_get_(self,itemID=''): 
-        data = json.dumps({ 
-                           "jsonrpc":"2.0", 
-                           "method":"trend.get", 
-                           "params":{ 
-                               "output":[
-                                   "itemid",
-                                   "clock",
-                                   "num",
-                                   "value_min",
-                                   "value_avg",
-                                   "value_max"
-                                        ],
-                               "itemids":itemID,
-                               "limit":"8760"
-                                     }, 
-
-                           "auth":self.user_login(), 
-                           "id":1, 
-                           }) 
-         
-        request = urllib2.Request(self.url,data) 
-        for key in self.header: 
-            request.add_header(key, self.header[key]) 
-              
-        try: 
-            result = urllib2.urlopen(request) 
-        except URLError as e: 
-            print "Error as ", e 
-        else: 
-            response = json.loads(result.read()) 
-            result.close() 
-            if len(response['result']) == 0:
-                return 0
-            for trend in response['result']:
-                print trend 
     #}}}
     # template
     #{{{template_get
@@ -1606,15 +1595,15 @@ if __name__ == "__main__":
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history_get',nargs=4,metavar=('history_type','item_ID','time_from','time_till'),dest='history_get',help='查询history')
     parser.add_argument('--report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='report',help='\
-                        --report 0 "CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    parser.add_argument('--report_available',nargs=2,metavar=('date_from','date_till'),dest='report_available',help='\
-                        --report_available "2016-06-03" "2016-06-10"')
+                        eg: 0 "CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser.add_argument('--report_available',nargs=3,metavar=('itemName','date_from','date_till'),dest='report_available',help='\
+                        eg:"Agent ping" "2016-06-03" "2016-06-10"')
     parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
     parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
                         help='export data to xls')
     parser.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
                         help="add the xls's title")
-    parser.add_argument('--trend_get',nargs=1,metavar=('item_ID'),dest='trend_get',help='查询item trend')
+    #parser.add_argument('--trend_get',nargs=1,metavar=('item_ID'),dest='trend_get',help='查询item trend')
     # template
     parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
     parser.add_argument('--template_import',dest='template_import',nargs=1,metavar=('templatePath'),help='import template')
@@ -1694,12 +1683,10 @@ if __name__ == "__main__":
                 zabbix.item_get(args.listitem[0],args.listitem[1])
         if args.history_get:
             zabbix.history_get(args.history_get[0],args.history_get[1],args.history_get[2],args.history_get[3])
-        if args.trend_get:
-            zabbix.trend_get(args.trend_get[0])
         if args.report:
             zabbix.report(args.report[0],args.report[1],args.report[2],args.report[3],export_xls)
         if args.report_available:
-            zabbix.report_available(args.report_available[0],args.report_available[1],export_xls)
+            zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls)
         if args.hostgroup_add:
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
