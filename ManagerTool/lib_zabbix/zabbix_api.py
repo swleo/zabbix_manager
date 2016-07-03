@@ -213,7 +213,7 @@ class zabbix_api:
             if len(response['result']) == 0:
                 return 0
             for host in response['result']:      
-                host_list.append([host['hostid'],host['host'],host['name']])
+                host_list.append((host['hostid'],host['host'],host['name']))
             return host_list
 
     #}}}
@@ -542,7 +542,7 @@ class zabbix_api:
     # @param export_xls 
     #
     # @return 
-    def report(self,history,itemName,date_from,date_till,export_xls): 
+    def report(self,history,itemName,date_from,date_till,export_xls,select_condition): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         #dateFormat = "%Y-%m-%d"
         try:
@@ -574,7 +574,22 @@ class zabbix_api:
             table_show.append(["hostid","name","itemName","min","max","avg"])
         else:
             print "hostid",'\t',"name",'\t',"itemName",'\t',"min",'\t',"max","avg"
-        host_list = self._host_get()
+
+        # 获取需要输出报表信息的host_list
+        if select_condition["hostgroupID"] or select_condition["hostID"]:
+            host_list_g=[]
+            host_list_h=[]
+            if select_condition["hostgroupID"]:
+                host_list_g=self._host_get(hostgroupID=select_condition["hostgroupID"])
+            if select_condition["hostID"]:
+                host_list_h=self._host_get(hostID=select_condition["hostID"])
+            # 将host_list_h的全部元素添加到host_list_g的尾部
+            host_list_g.extend(host_list_h)
+
+            # 去除列表中重复的元素
+            host_list = list(set(host_list_g))
+        else:
+            host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
             if itemid_all_list == 0:
@@ -691,7 +706,7 @@ class zabbix_api:
     # @param export_xls
     #
     # @return 
-    def report_available(self,itemName,date_from,date_till,export_xls): 
+    def report_available(self,itemName,date_from,date_till,export_xls,select_condition): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         #dateFormat = "%Y-%m-%d"
         check_time=60
@@ -724,7 +739,21 @@ class zabbix_api:
             table_show.append([u"hostid",u"资源类型",u"itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"])
         else:
             print "hostid",'\t',u"资源类型",'\t',"itemName",'\t',u"期望值(%)",'\t',u"平均值(%)",'\t',u"差值(%)"
-        host_list = self._host_get()
+        # 获取需要输出报表信息的host_list
+        if select_condition["hostgroupID"] or select_condition["hostID"]:
+            host_list_g=[]
+            host_list_h=[]
+            if select_condition["hostgroupID"]:
+                host_list_g=self._host_get(hostgroupID=select_condition["hostgroupID"])
+            if select_condition["hostID"]:
+                host_list_h=self._host_get(hostID=select_condition["hostID"])
+            # 将host_list_h的全部元素添加到host_list_g的尾部
+            host_list_g.extend(host_list_h)
+
+            # 去除列表中重复的元素
+            host_list = list(set(host_list_g))
+        else:
+            host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
             if itemid_all_list == 0:
@@ -1630,10 +1659,15 @@ if __name__ == "__main__":
     parser.add_argument('--action_discovery_add',dest='action_discovery_add',nargs=2,metavar=('actionName','hostgroupName'),\
                         help='add action')
 
+    # specialhost_get
+    parser.add_argument('--hostgroupid',nargs=1,metavar=('hostgroupID'),dest='hostgroupid',\
+            help='eg:"2,3,4"')
+    parser.add_argument('--hostid',nargs=1,metavar=('hostID'),dest='hostid',\
+            help='eg:"10105,10106"')
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
     parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.6')
+    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.7')
     if len(sys.argv)==1:
         print parser.print_help()
     else:
@@ -1647,6 +1681,12 @@ if __name__ == "__main__":
                       "title":"OFF",
                       "title_name":u"测试"
         }
+        
+        select_condition = {"hostgroupID":"",
+                "hostID":""
+                }
+
+        # 导出报表
         if args.xls:
             export_xls["xls"] = 'ON'
             export_xls["xls_name"]=args.xls[0]
@@ -1656,6 +1696,13 @@ if __name__ == "__main__":
                 export_xls["title_name"]=unicode(args.title[0],"utf-8")
             else:
                 print "the title params invalid"
+
+        # 选择特定机器
+        if args.hostgroupid:
+            select_condition["hostgroupID"]=args.hostgroupid[0]
+        if args.hostid:
+            select_condition["hostID"] = args.hostid[0]
+
         if args.listhost != 'host' :
             if args.listhost:
                 zabbix.host_get(args.listhost)
@@ -1684,9 +1731,9 @@ if __name__ == "__main__":
         if args.history_get:
             zabbix.history_get(args.history_get[0],args.history_get[1],args.history_get[2],args.history_get[3])
         if args.report:
-            zabbix.report(args.report[0],args.report[1],args.report[2],args.report[3],export_xls)
+            zabbix.report(args.report[0],args.report[1],args.report[2],args.report[3],export_xls,select_condition)
         if args.report_available:
-            zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls)
+            zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls,select_condition)
         if args.hostgroup_add:
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
