@@ -153,7 +153,7 @@ class zabbix_api:
     #  (2)Return only hosts that belong to the given groups.
     #  (3)Return only hosts with the given host IDs.
     def _host_get(self,hostgroupID='',hostID=''): 
-        host_list=[]
+        all_host_list=[]
         if hostgroupID:
             group_list=[]
             group_list[:]=[]
@@ -213,8 +213,8 @@ class zabbix_api:
             if len(response['result']) == 0:
                 return 0
             for host in response['result']:      
-                host_list.append((host['hostid'],host['host'],host['name']))
-            return host_list
+                all_host_list.append((host['hostid'],host['host'],host['name']))
+            return all_host_list
 
     #}}}
     #{{{host_create
@@ -331,7 +331,7 @@ class zabbix_api:
             print "主机 \033[041m %s\033[0m  已经删除 !"%hostid 
     #}}}
     # hostgroup
-    #{{{hostgroup_get
+    #{{{hostgroup_get(name)
     def hostgroup_get(self, hostgroupName=''): 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
@@ -367,6 +367,43 @@ class zabbix_api:
                 print "hostgroup:  \033[31m%s\033[0m\tgroupid : %s" %(group['name'],group['groupid'])
                 self.hostgroupID = group['groupid'] 
                 return group['groupid'] 
+
+    #}}}
+    #{{{_hostgroup_get_name(id)
+    def _hostgroup_get_name(self, groupid=''): 
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"hostgroup.get", 
+                           "params":{ 
+                                     "output": "extend", 
+                                     "filter": { 
+                                                "groupid": groupid
+                                                } 
+                                     }, 
+                           "auth":self.user_login(), 
+                           "id":1, 
+                           }) 
+         
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+            if len(response['result']) == 0:
+                return 0
+            for group in response['result']:
+                if  len(groupid)==0:
+                    print "hostgroup:  \033[31m%s\033[0m \tgroupid : %s" %(group['name'],group['groupid'])
+            else:
+                #print "hostgroup:  \033[31m%s\033[0m\tgroupid : %s" %(group['name'],group['groupid'])
+                return group['name'] 
 
     #}}}
     #{{{hostgroup_create
@@ -475,7 +512,7 @@ class zabbix_api:
                 return 0
 
     #}}}
-    # history
+    # report
     #{{{history_get(invalid)
     def history_get(self,history='',item_ID='',time_from='',time_till=''): 
         history_data=[]
@@ -531,6 +568,22 @@ class zabbix_api:
             return (history_min,history_max,history_avg)
 
     #}}}
+    #{{{_get_select_condition_info(select_condition)
+    ##
+    # @return 
+    def _get_select_condition_info(self,select_condition): 
+        output = ""
+        if select_condition["hostgroupID"]:
+            for i in select_condition["hostgroupID"].split(','):
+                hostgroup_name = self._hostgroup_get_name(i)
+                #print hostgroup_name
+                output = hostgroup_name+u"、"+output
+        if select_condition["hostID"]:
+            host_name = self._host_get(hostID=select_condition["hostID"])
+            for host_info in host_name:
+                output = host_info[2]+u"、"+output
+        return output
+ #}}}
     #{{{report
     ##
     # @brief report 
@@ -563,7 +616,6 @@ class zabbix_api:
 
             xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
             xlswriter.setcol_width([20,  20,20,10,10,10],sheet_name=sheetName)
-            xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
@@ -577,6 +629,11 @@ class zabbix_api:
 
         # 获取需要输出报表信息的host_list
         if select_condition["hostgroupID"] or select_condition["hostID"]:
+            if export_xls["xls"] == 'ON':
+                output_info = self._get_select_condition_info(select_condition)
+                xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
+                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
+                
             host_list_g=[]
             host_list_h=[]
             if select_condition["hostgroupID"]:
@@ -589,6 +646,10 @@ class zabbix_api:
             # 去除列表中重复的元素
             host_list = list(set(host_list_g))
         else:
+            if export_xls["xls"] == 'ON':
+                output_info = u"ALL"
+                xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
+                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
             host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
@@ -741,6 +802,10 @@ class zabbix_api:
             print "hostid",'\t',u"资源类型",'\t',"itemName",'\t',u"期望值(%)",'\t',u"平均值(%)",'\t',u"差值(%)"
         # 获取需要输出报表信息的host_list
         if select_condition["hostgroupID"] or select_condition["hostID"]:
+            if export_xls["xls"] == 'ON':
+                output_info = self._get_select_condition_info(select_condition)
+                xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
+                xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
             host_list_g=[]
             host_list_h=[]
             if select_condition["hostgroupID"]:
@@ -753,6 +818,10 @@ class zabbix_api:
             # 去除列表中重复的元素
             host_list = list(set(host_list_g))
         else:
+            if export_xls["xls"] == 'ON':
+                output_info = u"ALL"
+                xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
+                xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
             host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
