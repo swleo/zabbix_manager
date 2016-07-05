@@ -578,10 +578,16 @@ class zabbix_api:
                 hostgroup_name = self._hostgroup_get_name(i)
                 #print hostgroup_name
                 output = hostgroup_name+u"、"+output
+            output = u"主机组:" + output + "\n"
+        else:
+            output = u"主机组:" + "无" + "\n"
         if select_condition["hostID"]:
             host_name = self._host_get(hostID=select_condition["hostID"])
             for host_info in host_name:
                 output = host_info[2]+u"、"+output
+            output = u"主机:" + output + "\n"
+        else:
+            output = u"主机:" + "无" + "\n"
         return output
  #}}}
     #{{{report
