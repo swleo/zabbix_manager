@@ -574,20 +574,29 @@ class zabbix_api:
     def _get_select_condition_info(self,select_condition): 
         output = ""
         if select_condition["hostgroupID"]:
+            flag = 1
             for i in select_condition["hostgroupID"].split(','):
                 hostgroup_name = self._hostgroup_get_name(i)
                 #print hostgroup_name
-                output = hostgroup_name+u"、"+output
+                if flag:
+                    flag = 0
+                    output = hostgroup_name + output
+                else:
+                    output = hostgroup_name+u"、"+output
             output = u"主机组:" + output + "\n"
         else:
             output = u"主机组:" + u"无" + "\n"
         if select_condition["hostID"]:
+            flag = 1
             host_name = self._host_get(hostID=select_condition["hostID"])
             for host_info in host_name:
-                output = host_info[2]+u"、"+output
+                if flag:
+                    output = host_info[2]+u"  "+output
+                else:
+                    output = host_info[2]+u"、"+output
             output = u"主机:" + output + "\n"
         else:
-            output = u"主机:" + u"无" + "\n"
+            output = u"主机:" + u"无" + " " + output
         return output
  #}}}
     #{{{report
@@ -795,7 +804,6 @@ class zabbix_api:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
             xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
             xlswriter.setcol_width([20,20,20,10,10,10],sheet_name=sheetName)
-            xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
