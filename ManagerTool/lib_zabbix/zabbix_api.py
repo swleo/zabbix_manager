@@ -14,6 +14,7 @@ import time
 import my_compare
 import unicodedata
 import XLSWriter
+import config
 #{{{logging
 import logging 
 logging.basicConfig(level=logging.DEBUG,
@@ -583,20 +584,20 @@ class zabbix_api:
                     output = hostgroup_name + output
                 else:
                     output = hostgroup_name+u"、"+output
-            output = u"主机组:" + output + "\n"
+            output = u"主机组:" + output 
         else:
-            output = u"主机组:" + u"无" + "\n"
+            output = u"主机组:" + u"无"
         if select_condition["hostID"]:
             flag = 1
             host_name = self._host_get(hostID=select_condition["hostID"])
             for host_info in host_name:
                 if flag:
-                    output = host_info[2]+u"  "+output
+                    output = host_info[2]+"\n"+output
                 else:
                     output = host_info[2]+u"、"+output
             output = u"主机:" + output + "\n"
         else:
-            output = u"主机:" + u"无" + " " + output
+            output = u"主机:" + u"无" + "\n" + output
         return output
  #}}}
     #{{{report
@@ -620,7 +621,7 @@ class zabbix_api:
             info_msg=str(sheetName)
             logging.info(info_msg)
         except:
-            err_msg("时间格式 ['2016-05-01'] ['2016-06-01']")
+            err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
         if export_xls["xls"] == 'ON':
             xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
@@ -647,7 +648,7 @@ class zabbix_api:
             if export_xls["xls"] == 'ON':
                 output_info = self._get_select_condition_info(select_condition)
                 xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
-                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
+                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern_n=22)
                 
             host_list_g=[]
             host_list_h=[]
@@ -664,7 +665,7 @@ class zabbix_api:
             if export_xls["xls"] == 'ON':
                 output_info = u"ALL"
                 xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
-                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern=True)
+                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern_n=22)
             host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
@@ -794,7 +795,7 @@ class zabbix_api:
             info_msg=str(sheetName)
             logging.info(info_msg)
         except:
-            err_msg("时间格式 ['2016-05-01'] ['2016-06-01']")
+            err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
         if export_xls["xls"] == 'ON':
             xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
@@ -819,7 +820,7 @@ class zabbix_api:
             if export_xls["xls"] == 'ON':
                 output_info = self._get_select_condition_info(select_condition)
                 xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
-                xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
+                xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern_n=22)
             host_list_g=[]
             host_list_h=[]
             if select_condition["hostgroupID"]:
@@ -835,7 +836,7 @@ class zabbix_api:
             if export_xls["xls"] == 'ON':
                 output_info = u"ALL"
                 xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
-                xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern=True)
+                xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern_n=22)
             host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
@@ -851,6 +852,9 @@ class zabbix_api:
                 
                 #history_min,history_max,history_avg = self.agent_ping(itemid,time_from,time_till)
                 trend_sum,sum_value = self.agent_ping(itemid,time_from,time_till)
+
+                debug_msg="trend_sum:%d,sum_value:%d"%(trend_sum,sum_value)
+                logging.debug(debug_msg)
                 if (sum_value > 0) and (trend_sum > 0):
                     sum_value = float(sum_value*100)
                     sum_check=trend_sum*hour_check_num
@@ -860,6 +864,9 @@ class zabbix_api:
                     else:
                         avg_ping=float('%0.2f'% avg_ping)
                     diff_ping = avg_ping - 100
+                else:
+                    avg_ping = 0
+                    diff_ping = 0
 
                 if self.terminal_table:
                     table_show.append([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)])
@@ -867,6 +874,187 @@ class zabbix_api:
                     print host_info[0],'\t',host_info[2],'\t',itemName,'\t',"100",'\t',avg_ping,'\t',diff_ping
                 if export_xls["xls"] == "ON":
                     xlswriter.writerow([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)],sheet_name=sheetName,border=True)
+        print
+        if self.terminal_table:
+            table=SingleTable(table_show)
+            table.title = itemName
+            print(table.table)
+        if export_xls["xls"] == 'ON':
+            xlswriter.save()
+        return 0
+ #}}}
+    #{{{report_flow
+    ##
+    # @return 
+    def report_flow(self,date_from,date_till,export_xls): 
+        hosts_file="./switch"
+        host_all_info = config.read_config(hosts_file)
+        #print host_all_info
+        dateFormat = "%Y-%m-%d %H:%M:%S"
+        try:
+            startTime =  time.strptime(date_from,dateFormat)
+            endTime =  time.strptime(date_till,dateFormat)
+            sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
+            info_msg=str(sheetName)
+            logging.info(info_msg)
+        except:
+            err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
+
+        if export_xls["xls"] == 'ON':
+            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
+            if export_xls["title"] == 'ON':
+                xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
+            else:
+                xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+            xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
+            xlswriter.setcol_width([20,40],sheet_name=sheetName)
+            xlswriter.write_title(sheet_name=sheetName,border=True,pattern_n=22)
+
+        time_from = int(time.mktime(startTime))+1
+        time_till = int(time.mktime(endTime))
+        if time_from > time_till:
+            err_msg("date_till must after the date_from time")
+
+        print \
+            "nu",\
+            "hostname|",\
+            "ethernet_port|",\
+            "speed",\
+            "in_max|",\
+            "in_avg|",\
+            "in_min|",\
+            "rate_in_max|",\
+            'rate_in_avg|',\
+            "rate_in_min|",\
+            "out_max|",\
+            "out_avg|",\
+            "out_min",\
+            "rate_out_max|",\
+            "rate_out_avg|",\
+            "rate_out_min|",\
+            "bandwidth"
+        # 获取需要输出报表信息的host_list
+        num=1
+        for host_info in host_all_info: 
+            # host_info (description,hostid,ethernet_port,default_speed)
+            description = host_info[0]
+            hostid = host_info[1]
+            host_name_list = self._host_get(hostID=hostid)
+            host_name=host_name_list[0][2]
+            ethernet_port = host_info[2]
+            default_speed = host_info[3]
+            
+            item_ethernet_port_in = "Incoming network traffic on " + ethernet_port
+            item_ethernet_port_out = "Outgoing network traffic on " + ethernet_port
+
+            # speed
+            speed_flag=False
+            if default_speed != "None":
+                speed = float(default_speed)
+            else:
+                item_speed = "Speed on " + ethernet_port
+                itemid_all_list = self.item_get(hostid,item_speed)
+                if itemid_all_list:
+                    itemid=itemid_all_list[0][0]
+                    report_min,report_max,report_avg = self.trend_get(itemid,time_from,time_till)
+                    speed = report_max
+                    if speed == 0:
+                        speed = 1000
+                        speed_flag = True
+                
+            print speed
+            # ethernet_port
+            itemid_in_list = self.item_get(hostid,item_ethernet_port_in)
+            print "in_out", itemid_in_list
+            if itemid_in_list:
+                itemid_in=itemid_in_list[0][0]
+                in_min,in_max,in_avg = self.trend_get(itemid_in,time_from,time_till)
+                in_min = float('%0.4f'%(in_min /1000000.0))
+                in_max = float('%0.4f'%(in_max /1000000.0))
+                in_avg = float('%0.4f'%(in_avg /1000000.0))
+            #print in_max,in_avg,in_min
+                rate_in_min = float('%0.4f'% (in_min/speed * 100))
+                rate_in_max = float('%0.4f'% (in_max/speed * 100))
+                rate_in_avg = float('%0.4f'% (in_avg/speed * 100))
+
+            itemid_out_list = self.item_get(hostid,item_ethernet_port_out)
+            if itemid_out_list:
+                itemid_out = itemid_out_list[0][0]
+                out_min,out_max,out_avg = self.trend_get(itemid_out,time_from,time_till)
+                out_min = float('%0.4f'%(out_min /1000000.0))
+                out_max = float('%0.4f'%(out_max /1000000.0))
+                out_avg = float('%0.4f'%(out_avg /1000000.0))
+                rate_out_min = float('%0.4f'%(out_min/speed * 100))
+                rate_out_max = float('%0.4f'%(out_max/speed * 100))
+                rate_out_avg = float('%0.4f'%(out_avg/speed * 100))
+            #print out_max,out_avg,out_min
+
+            if rate_in_max > rate_out_max:
+                bandwidth = rate_in_max
+            else:
+                bandwidth =rate_out_max
+
+            print \
+                num,\
+                host_name,\
+                ethernet_port,\
+                speed,\
+                in_max,\
+                in_avg,\
+                in_min,\
+                rate_in_max,\
+                rate_in_avg,\
+                rate_in_min,\
+                out_max,\
+                out_avg,\
+                out_min,\
+                rate_out_max,\
+                rate_out_avg,\
+                rate_out_min,\
+                bandwidth
+            if export_xls["xls"] == "ON":
+                if speed_flag:
+                    xlswriter.writerow([
+                        num,\
+                        host_name,\
+                        ethernet_port,\
+                        speed,\
+                        in_max,\
+                        in_avg,\
+                        in_min,\
+                        rate_in_max,\
+                        rate_in_avg,\
+                        rate_in_min,\
+                        out_max,\
+                        out_avg,\
+                        out_min,\
+                        rate_out_max,\
+                        rate_out_avg,\
+                        rate_out_min,\
+                        bandwidth],
+                        sheet_name=sheetName,border=True,pattern_n=2)
+                else:
+                    xlswriter.writerow([
+                        num,\
+                        host_name,\
+                        ethernet_port,\
+                        speed,\
+                        in_max,\
+                        in_avg,\
+                        in_min,\
+                        rate_in_max,\
+                        rate_in_avg,\
+                        rate_in_min,\
+                        out_max,\
+                        out_avg,\
+                        out_min,\
+                        rate_out_max,\
+                        rate_out_avg,\
+                        rate_out_min,\
+                        bandwidth],
+                        sheet_name=sheetName,border=True)
+                num=num+1
+                    
         print
         if self.terminal_table:
             table=SingleTable(table_show)
@@ -1709,7 +1897,9 @@ if __name__ == "__main__":
     parser.add_argument('--report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='report',help='\
                         eg: 0 "CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_available',nargs=3,metavar=('itemName','date_from','date_till'),dest='report_available',help='\
-                        eg:"Agent ping" "2016-06-03" "2016-06-10"')
+                        eg:"Agent ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser.add_argument('--report_flow',nargs=2,metavar=('date_from','date_till'),dest='report_flow',help='\
+                        eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
     parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
                         help='export data to xls')
@@ -1815,6 +2005,8 @@ if __name__ == "__main__":
             zabbix.history_get(args.history_get[0],args.history_get[1],args.history_get[2],args.history_get[3])
         if args.report:
             zabbix.report(args.report[0],args.report[1],args.report[2],args.report[3],export_xls,select_condition)
+        if args.report_flow:
+            zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls)
         if args.report_available:
             zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls,select_condition)
         if args.hostgroup_add:
