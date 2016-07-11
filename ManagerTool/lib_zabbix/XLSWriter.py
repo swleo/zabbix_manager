@@ -49,6 +49,33 @@ class XLSWriter(object):
                                                         title_name,style)
         self.sheets[sheet_name]['rows'] += 1
     #}}}
+    #{{{add_image2
+    def add_image2(self,bmp_name='',x='',y='',length='',title_name='ceshi',sheet_name='sheet'):
+        if sheet_name not in self.sheets:
+            # Create if does not exist
+            self.create_sheet(sheet_name)
+        tall_style = xlwt.easyxf('font:height 820;')
+        self.sheets[sheet_name]['sheet'].row(self.sheets[sheet_name]['rows']).set_style(tall_style)
+        self.sheets[sheet_name]['sheet'].insert_bitmap('python.bmp',\
+                                                       x,y,0,0,scale_x=0.50,\
+                                                       scale_y=0.60)
+        if length:
+            style = xlwt.XFStyle() # Create Style
+            font = xlwt.Font()
+            font.bold = True
+            font.height = 0x00FD
+            style.font = font
+            alignment = xlwt.Alignment() # Create Alignment
+            alignment.horz = xlwt.Alignment.HORZ_CENTER 
+            # May be: HORZ_GENERAL,HORZ_LEFT, HORZ_CENTER, HORZ_RIGHT, HORZ_FILLED, HORZ_JUSTIFIED,HORZ_CENTER_ACROSS_SEL, HORZ_DISTRIBUTED
+            alignment.vert = xlwt.Alignment.VERT_CENTER 
+            # May be: VERT_TOP,VERT_CENTER, VERT_BOTTOM, VERT_JUSTIFIED, VERT_DISTRIBUTED
+            style.alignment = alignment # Add Alignment to Style
+            self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],self.sheets[sheet_name]['rows'],\
+                                                        1,length-1,\
+                                                        title_name,style)
+        self.sheets[sheet_name]['rows'] += 1
+    #}}}
     #{{{add_header
     def add_header(self,header_name,length,sheet_name='sheet'):
         if sheet_name not in self.sheets:
@@ -149,101 +176,107 @@ class XLSWriter(object):
                                                          self.sheets[sheet_name]['rows']+1,\
                                                          1,\
                                                          1,\
+                                                         u"摘要",\
+                                                         style)
+            self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
+                                                         self.sheets[sheet_name]['rows']+1,\
+                                                         2,\
+                                                         2,\
                                                          u"资源名称",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
                                                          self.sheets[sheet_name]['rows']+1,\
-                                                         2,\
-                                                         2,\
+                                                         3,\
+                                                         3,\
                                                          u"端口",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
                                                          self.sheets[sheet_name]['rows']+1,\
-                                                         3,\
-                                                         3,\
+                                                         4,\
+                                                         4,\
                                                          u"speed",\
                                                          style)
             ### 接收速率(Mbps)
             self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
                                                          self.sheets[sheet_name]['rows'],\
-                                                         4,\
-                                                         6,\
+                                                         5,\
+                                                         7,\
                                                          u"接收速率(Mbps)",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         4,\
+                                                         5,\
                                                          u"最大值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         5,\
+                                                         6,\
                                                          u"平均值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         6,\
+                                                         7,\
                                                          u"最小值",\
                                                          style)
             ### 接收利用率(%)
             self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
                                                          self.sheets[sheet_name]['rows'],\
-                                                         7,\
-                                                         9,\
+                                                         8,\
+                                                         10,\
                                                          u"接收利用率(%)",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         7,\
+                                                         8,\
                                                          u"最大值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         8,\
+                                                         9,\
                                                          u"平均值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         9,\
+                                                         10,\
                                                          u"最小值",\
                                                          style)
             ### 发送速率(Mbps)
             self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
                                                          self.sheets[sheet_name]['rows'],\
-                                                         10,\
-                                                         12,\
+                                                         11,\
+                                                         13,\
                                                          u"发送速率(Mbps)",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         10,\
+                                                         11,\
                                                          u"最大值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         11,\
+                                                         12,\
                                                          u"平均值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         12,\
+                                                         13,\
                                                          u"最小值",\
                                                          style)
             ### 发送利用率(%)
             self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
                                                          self.sheets[sheet_name]['rows'],\
-                                                         13,\
-                                                         15,\
+                                                         14,\
+                                                         16,\
                                                          u"发送利用率(%)",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         13,\
+                                                         14,\
                                                          u"最大值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         14,\
+                                                         15,\
                                                          u"平均值",\
                                                          style)
             self.sheets[sheet_name]['sheet'].write(self.sheets[sheet_name]['rows']+1,\
-                                                         15,\
+                                                         16,\
                                                          u"最小值",\
                                                          style)
             ### 带宽利用率
             self.sheets[sheet_name]['sheet'].write_merge(self.sheets[sheet_name]['rows'],\
                                                          self.sheets[sheet_name]['rows']+1,\
-                                                         16,\
-                                                         16,\
+                                                         17,\
+                                                         17,\
                                                          u"带宽利用率(%)",\
                                                          style)
             #print self.sheets[sheet_name]['rows'],ci, self.cell(col) if type(col) != lib.xlwt.ExcelFormula.Formula else col

@@ -903,11 +903,11 @@ class zabbix_api:
         if export_xls["xls"] == 'ON':
             xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
             if export_xls["title"] == 'ON':
-                xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
+                xlswriter.add_image2("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
             else:
-                xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+                xlswriter.add_image2("python.bmg",0,0,sheet_name=sheetName)
             xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
-            xlswriter.setcol_width([20,40],sheet_name=sheetName)
+            xlswriter.setcol_width([5,20,58,21,8,8,8,8,8,8,8,8,8,8,8,8,8,11],sheet_name=sheetName)
             xlswriter.write_title(sheet_name=sheetName,border=True,pattern_n=22)
 
         time_from = int(time.mktime(startTime))+1
@@ -917,6 +917,7 @@ class zabbix_api:
 
         print \
             "nu",\
+            "description",\
             "hostname|",\
             "ethernet_port|",\
             "speed",\
@@ -940,6 +941,8 @@ class zabbix_api:
             description = host_info[0]
             hostid = host_info[1]
             host_name_list = self._host_get(hostID=hostid)
+            if host_name_list == 0:
+                continue
             host_name=host_name_list[0][2]
             ethernet_port = host_info[2]
             default_speed = host_info[3]
@@ -962,10 +965,8 @@ class zabbix_api:
                         speed = 1000
                         speed_flag = True
                 
-            print speed
             # ethernet_port
             itemid_in_list = self.item_get(hostid,item_ethernet_port_in)
-            print "in_out", itemid_in_list
             if itemid_in_list:
                 itemid_in=itemid_in_list[0][0]
                 in_min,in_max,in_avg = self.trend_get(itemid_in,time_from,time_till)
@@ -976,6 +977,10 @@ class zabbix_api:
                 rate_in_min = float('%0.4f'% (in_min/speed * 100))
                 rate_in_max = float('%0.4f'% (in_max/speed * 100))
                 rate_in_avg = float('%0.4f'% (in_avg/speed * 100))
+            else:
+                print "no item[%s]"%item_ethernet_port_in
+                continue
+
 
             itemid_out_list = self.item_get(hostid,item_ethernet_port_out)
             if itemid_out_list:
@@ -987,7 +992,9 @@ class zabbix_api:
                 rate_out_min = float('%0.4f'%(out_min/speed * 100))
                 rate_out_max = float('%0.4f'%(out_max/speed * 100))
                 rate_out_avg = float('%0.4f'%(out_avg/speed * 100))
-            #print out_max,out_avg,out_min
+            else:
+                print "no item[%s]"%item_ethernet_port_out
+                continue
 
             if rate_in_max > rate_out_max:
                 bandwidth = rate_in_max
@@ -996,6 +1003,7 @@ class zabbix_api:
 
             print \
                 num,\
+                description,\
                 host_name,\
                 ethernet_port,\
                 speed,\
@@ -1016,6 +1024,7 @@ class zabbix_api:
                 if speed_flag:
                     xlswriter.writerow([
                         num,\
+                        description,\
                         host_name,\
                         ethernet_port,\
                         speed,\
@@ -1036,6 +1045,7 @@ class zabbix_api:
                 else:
                     xlswriter.writerow([
                         num,\
+                        description,\
                         host_name,\
                         ethernet_port,\
                         speed,\
