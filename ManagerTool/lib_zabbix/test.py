@@ -13,7 +13,7 @@ import sys
 root_path = os.path.dirname(__file__)
 print root_path
 sys.path.insert(0, os.path.join(root_path))
-sys.path.insert(0, os.path.join(root_path, 'lib'))
+sys.path.insert(0, os.path.join(root_path, 'mylib'))
 from zabbix_api import zabbix_api
 #新增帮助信息，可直接执行脚本
 zabbix=zabbix_api()
