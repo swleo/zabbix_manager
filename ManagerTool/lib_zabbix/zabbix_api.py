@@ -155,6 +155,7 @@ class zabbix_api:
     #  (1)Return all hosts.
     #  (2)Return only hosts that belong to the given groups.
     #  (3)Return only hosts with the given host IDs.
+    #  return a list
     def _host_get(self,hostgroupID='',hostID=''): 
         all_host_list=[]
         if hostgroupID:
@@ -214,7 +215,7 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             if len(response['result']) == 0:
-                return 0
+                return []
             for host in response['result']:      
                 all_host_list.append((host['hostid'],host['host'],host['name']))
             return all_host_list
@@ -943,7 +944,7 @@ class zabbix_api:
             description = host_info[0]
             hostid = host_info[1]
             host_name_list = self._host_get(hostID=hostid)
-            if host_name_list == 0:
+            if len(host_name_list) == 0:
                 continue
             host_name=host_name_list[0][2]
             ethernet_port = host_info[2]
