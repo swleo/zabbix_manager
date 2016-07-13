@@ -15,6 +15,8 @@ import my_compare
 import unicodedata
 import XLSWriter
 import config
+reload(sys)
+sys.setdefaultencoding("utf-8")
 #{{{logging
 import logging 
 logging.basicConfig(level=logging.DEBUG,
