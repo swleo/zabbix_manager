@@ -29,8 +29,8 @@ class XLSWriter(object):
             self.create_sheet(sheet_name)
         tall_style = xlwt.easyxf('font:height 820;')
         self.sheets[sheet_name]['sheet'].row(self.sheets[sheet_name]['rows']).set_style(tall_style)
-        self.sheets[sheet_name]['sheet'].insert_bitmap('python.bmp',\
-                                                       x,y,0,0,scale_x=0.33,\
+        self.sheets[sheet_name]['sheet'].insert_bitmap('logo.bmp',\
+                                                       x,y,0,0,scale_x=0.40,\
                                                        scale_y=0.60)
         if length:
             style = xlwt.XFStyle() # Create Style
@@ -56,7 +56,7 @@ class XLSWriter(object):
             self.create_sheet(sheet_name)
         tall_style = xlwt.easyxf('font:height 820;')
         self.sheets[sheet_name]['sheet'].row(self.sheets[sheet_name]['rows']).set_style(tall_style)
-        self.sheets[sheet_name]['sheet'].insert_bitmap('python.bmp',\
+        self.sheets[sheet_name]['sheet'].insert_bitmap('logo.bmp',\
                                                        x,y,0,0,scale_x=0.50,\
                                                        scale_y=0.60)
         if length:
@@ -383,7 +383,7 @@ class XLSWriter(object):
 if __name__ == '__main__':
     # test
     xlswriter = XLSWriter('ceshi.xls')
-    xlswriter.add_image("python.bmg",0,0,4,title_name=u"测试",sheet_name=u"基本信息")
+    xlswriter.add_image("logo.bmg",0,0,4,title_name=u"测试",sheet_name=u"基本信息")
     xlswriter.add_header(u"信息登记表",4,sheet_name=u"基本信息")
     xlswriter.add_remark(u"信息登记表jkfdadaddddddddd\nddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",4,sheet_name=u"基本信息")
     xlswriter.setcol_width([20, 40],sheet_name=u'基本信息')

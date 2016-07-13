@@ -597,7 +597,7 @@ class zabbix_api:
                     output = host_info[2]+"\n"+output
                 else:
                     output = host_info[2]+u"、"+output
-            output = u"主机:" + output + "\n"
+            output = u"主机:" + output 
         else:
             output = u"主机:" + u"无" + "\n" + output
         return output
@@ -634,7 +634,7 @@ class zabbix_api:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
 
             xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
-            xlswriter.setcol_width([20,  20,20,10,10,10],sheet_name=sheetName)
+            xlswriter.setcol_width([10,50,35,10,10,10],sheet_name=sheetName)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
@@ -808,7 +808,7 @@ class zabbix_api:
             else:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
             xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
-            xlswriter.setcol_width([20,20,20,10,10,10],sheet_name=sheetName)
+            xlswriter.setcol_width([10,50,35,10,10,10],sheet_name=sheetName)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
@@ -912,7 +912,7 @@ class zabbix_api:
             else:
                 xlswriter.add_image2("python.bmg",0,0,sheet_name=sheetName)
             xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
-            xlswriter.setcol_width([5,20,58,21,8,8,8,8,8,8,8,8,8,8,8,8,8,11],sheet_name=sheetName)
+            xlswriter.setcol_width([5,58,20,20,8,8,8,8,8,8,8,8,8,8,8,8,8,11],sheet_name=sheetName)
             xlswriter.write_title(sheet_name=sheetName,border=True,pattern_n=22)
 
         time_from = int(time.mktime(startTime))+1
@@ -957,7 +957,7 @@ class zabbix_api:
 
             # speed
             speed_flag=False
-            if default_speed != "None":
+            if default_speed != "AUTO":
                 speed = float(default_speed)
             else:
                 item_speed = "Speed on " + ethernet_port
@@ -1958,7 +1958,7 @@ if __name__ == "__main__":
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
     parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.8')
+    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.1.0')
     if len(sys.argv)==1:
         print parser.print_help()
     else:
