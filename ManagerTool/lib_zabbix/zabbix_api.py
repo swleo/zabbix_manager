@@ -155,7 +155,6 @@ class zabbix_api:
     #  (1)Return all hosts.
     #  (2)Return only hosts that belong to the given groups.
     #  (3)Return only hosts with the given host IDs.
-    #  return a list
     def _host_get(self,hostgroupID='',hostID=''): 
         all_host_list=[]
         if hostgroupID:
@@ -621,6 +620,7 @@ class zabbix_api:
             startTime =  time.strptime(date_from,dateFormat)
             endTime =  time.strptime(date_till,dateFormat)
             sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
+            title_table =  date_from + "~" + date_till
             info_msg=str(sheetName)
             logging.info(info_msg)
         except:
@@ -633,7 +633,7 @@ class zabbix_api:
             else:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
 
-            xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
+            xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
             xlswriter.setcol_width([20,  20,20,10,10,10],sheet_name=sheetName)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
@@ -795,6 +795,7 @@ class zabbix_api:
             startTime =  time.strptime(date_from,dateFormat)
             endTime =  time.strptime(date_till,dateFormat)
             sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
+            title_table =  date_from + "~" + date_till
             info_msg=str(sheetName)
             logging.info(info_msg)
         except:
@@ -806,7 +807,7 @@ class zabbix_api:
                 xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
             else:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
-            xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
+            xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
             xlswriter.setcol_width([20,20,20,10,10,10],sheet_name=sheetName)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
@@ -889,8 +890,7 @@ class zabbix_api:
     #{{{report_flow
     ##
     # @return 
-    def report_flow(self,date_from,date_till,export_xls): 
-        hosts_file="./switch"
+    def report_flow(self,date_from,date_till,export_xls,hosts_file="./switch"): 
         host_all_info = config.read_config(hosts_file)
         #print host_all_info
         dateFormat = "%Y-%m-%d %H:%M:%S"
@@ -898,6 +898,8 @@ class zabbix_api:
             startTime =  time.strptime(date_from,dateFormat)
             endTime =  time.strptime(date_till,dateFormat)
             sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
+            title_table =  date_from + "~" + date_till
+            info_msg=str(sheetName)
             info_msg=str(sheetName)
             logging.info(info_msg)
         except:
@@ -909,7 +911,7 @@ class zabbix_api:
                 xlswriter.add_image2("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
             else:
                 xlswriter.add_image2("python.bmg",0,0,sheet_name=sheetName)
-            xlswriter.add_header(u"报告周期:"+sheetName,6,sheet_name=sheetName)
+            xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
             xlswriter.setcol_width([5,20,58,21,8,8,8,8,8,8,8,8,8,8,8,8,8,11],sheet_name=sheetName)
             xlswriter.write_title(sheet_name=sheetName,border=True,pattern_n=22)
 
@@ -1907,12 +1909,15 @@ if __name__ == "__main__":
     parser.add_argument('-H','--host',nargs='?',metavar=('HostName'),dest='listhost',default='host',help='查询主机')
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history_get',nargs=4,metavar=('history_type','item_ID','time_from','time_till'),dest='history_get',help='查询history')
+    # report
     parser.add_argument('--report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='report',help='\
                         eg: 0 "CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_available',nargs=3,metavar=('itemName','date_from','date_till'),dest='report_available',help='\
                         eg:"Agent ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_flow',nargs=2,metavar=('date_from','date_till'),dest='report_flow',help='\
                         eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser.add_argument('-f',nargs=1,metavar=('switch.file'),dest='switch_file',help='\
+                        eg: "switch1.txt"')
     parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
     parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
                         help='export data to xls')
@@ -1953,7 +1958,7 @@ if __name__ == "__main__":
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
     parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.7')
+    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.0.8')
     if len(sys.argv)==1:
         print parser.print_help()
     else:
@@ -1982,6 +1987,10 @@ if __name__ == "__main__":
                 export_xls["title_name"]=unicode(args.title[0],"utf-8")
             else:
                 print "the title params invalid"
+        if args.switch_file:
+            hosts_file=args.switch_file[0]
+        else:
+            hosts_file="./switch"
 
         # 选择特定机器
         if args.hostgroupid:
@@ -2019,7 +2028,7 @@ if __name__ == "__main__":
         if args.report:
             zabbix.report(args.report[0],args.report[1],args.report[2],args.report[3],export_xls,select_condition)
         if args.report_flow:
-            zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls)
+            zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls,hosts_file)
         if args.report_available:
             zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls,select_condition)
         if args.hostgroup_add:

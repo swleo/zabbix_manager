@@ -136,6 +136,7 @@ password = zabbix
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_del.jpg)
 <h2 name="3">3 version</h2>
 ----
+* v1.0.8，2016-07-13 add report
 * v1.0.6，2016-06-23 add rule and discovery manage
 * v1.0.5，2016-06-19 add mediatype manage
 * v1.0.4，2016-06-18 add usergroup manage
