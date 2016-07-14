@@ -969,6 +969,8 @@ class zabbix_api:
                     if speed == 0:
                         speed = 1000
                         speed_flag = True
+                else:
+                    speed = -1
                 
             # ethernet_port
             itemid_in_list = self.item_get(hostid,item_ethernet_port_in)
@@ -984,7 +986,12 @@ class zabbix_api:
                 rate_in_avg = float('%0.4f'% (in_avg/speed * 100))
             else:
                 print "no item[%s]"%item_ethernet_port_in
-                continue
+                in_min = -1
+                in_max = -1
+                in_avg = -1
+                rate_in_min = -1
+                rate_in_max = -1
+                rate_in_avg = -1
 
 
             itemid_out_list = self.item_get(hostid,item_ethernet_port_out)
@@ -999,7 +1006,12 @@ class zabbix_api:
                 rate_out_avg = float('%0.4f'%(out_avg/speed * 100))
             else:
                 print "no item[%s]"%item_ethernet_port_out
-                continue
+                out_min = -1
+                out_max = -1
+                out_avg = -1
+                rate_out_min = -1
+                rate_out_max = -1
+                rate_out_avg = -1
 
             if rate_in_max > rate_out_max:
                 bandwidth = rate_in_max
