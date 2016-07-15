@@ -17,6 +17,7 @@ report 包括以下内容
 + CPU在一段时间内的最高值、平均值、最小值等
 + item支持模糊搜索
 + 文件系统的使用情况等
++ 支持选择特定主机组或者主机
 
 <h3>1.4.2 服务器可用性报表</h3>
 
@@ -37,3 +38,13 @@ report 包括以下内容
 同时加--title可以输出logo旁边的title name如下
 
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_xls.jpg)
+
+
+<h3>1.4.3 提示</h3>
+
+(1)不加条件项时默认输出所有主机信息，如果有特定选择可以选择以下方式
+
+```
+--hostgroupid "主机组ID1，主机组ID2..."
+--hostid "主机ID1，主机ID2..."
+```
