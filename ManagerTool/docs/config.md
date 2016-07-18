@@ -49,7 +49,7 @@ HostMetadataItem=system.uname
 ```
 (2)server
 
-步骤：configuration>>action>>Event source（选择Auto registration）>>CreaAction
+步骤：configuration>>actions>>Event source（选择Auto registration）>>CreaAction
 
 * Action选项卡-----------定义Action名称：Action_for_autoreg
 * Conditions选项卡------添加:Host metadata like Linux
