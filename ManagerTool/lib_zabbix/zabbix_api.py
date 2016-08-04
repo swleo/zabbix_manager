@@ -1135,9 +1135,9 @@ class zabbix_api:
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"trend.get", 
-                           "time_from":time_from,
-                           "time_till":time_till,
                            "params":{ 
+                               "time_from":time_from,
+                               "time_till":time_till,
                                "output":[
                                    "itemid",
                                    "clock",
@@ -1170,14 +1170,6 @@ class zabbix_api:
                 logging.debug(debug_info)
                 return 0.0,0.0,0.0
             for result_info in response['result']:
-                #print type(result_info['value_min'])
-                #if not cmp(result_info['value_min'], '0.0'):
-                #if result_info['value_min'] == "0.0000":
-                #    print result_info['value_min']
-                #    debug_info=str([result_info])
-                #    logging.debug(debug_info)
-                #else:
-                #    trend_min_data.append(result_info['value_min'])
                 trend_min_data.append(result_info['value_min'])
                     
                 trend_max_data.append(result_info['value_max'])
@@ -1185,19 +1177,10 @@ class zabbix_api:
             trend_min_data_all=my_sort.Stats(trend_min_data)
             trend_max_data_all=my_sort.Stats(trend_max_data)
             trend_avg_data_all=my_sort.Stats(trend_avg_data)
-            #print trend_min_data
-            #print trend_max_data
-            #print trend_avg_data
             trend_min=trend_min_data_all.min()
             trend_max=trend_max_data_all.max()
             trend_avg=float('%0.4f'% trend_avg_data_all.avg())
             
-            #if history == '3':
-            #    history_min = int(history_min)
-            #    history_max = int(history_max)
-            #    history_avg = int(history_avg)
-            #debug_info=str([history,item_ID,time_from,time_till,history_min,history_max,history_avg])
-            #logging.debug(debug_info)
             return (trend_min,trend_max,trend_avg)
     #}}}
     # template

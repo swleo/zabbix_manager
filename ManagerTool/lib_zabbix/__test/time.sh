@@ -12,6 +12,5 @@ now=`date  "+%Y-%m-%d 00:00:00"`
 from=`date -d "$from" '+%s'`
 now=`date -d "$now" '+%s'`
 
-cd ..
-python zabbix_api.py --history_get 0 23685 ${from} ${now}
-python zabbix_api.py --history_get 3 23678 ${from} ${now}
+echo $from
+echo $now
