@@ -437,7 +437,8 @@ class zabbix_api:
     # @param itemName
     #
     # @return list
-    # list_format [item['itemid'],item['name'],item['key_']]
+    # list_format
+    # [item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']]
 
     def item_get(self, host_ID='',itemName=''): 
         if  len(host_ID)==0:
@@ -468,7 +469,7 @@ class zabbix_api:
         else: 
             response = json.loads(result.read()) 
             result.close() 
-            table_show.append(["itemid","name","key_","update_time"])
+            table_show.append(["itemid","name","key_","update_time","value_type"])
             if len(response['result']) == 0:
                 return 0
             item_list=[]
@@ -486,13 +487,13 @@ class zabbix_api:
                         item['name']=item['name'].replace(para,list_para[para_a])
 
                 if  len(itemName)==0:
-                    table_show.append([item['itemid'],item['name'],item['key_'],item['delay']])
+                    table_show.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']])
                 else:
                     if item['name']==itemName:
-                        item_list.append([item['itemid'],item['name'],item['key_'],item['delay']])
+                        item_list.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']])
                     else:
                         if my_compare.my_compare(item['name'],itemName):
-                            item_list.append([item['itemid'],item['name'],item['key_'],item['delay']])
+                            item_list.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']])
             
             if len(itemName) == 0:
                 table=SingleTable(table_show)
@@ -586,14 +587,13 @@ class zabbix_api:
     ##
     # @brief report 
     #
-    # @param history
     # @param itemName
     # @param date_from
     # @param date_till
     # @param export_xls 
     #
     # @return 
-    def report(self,history,itemName,date_from,date_till,export_xls,select_condition): 
+    def report(self,itemName,date_from,date_till,export_xls,select_condition): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         info_msg=str(date_till)
         self.logger.info(info_msg)
@@ -657,14 +657,15 @@ class zabbix_api:
             if itemid_all_list == 0:
                 continue
             for itemid_sub_list in itemid_all_list:
-                itemid=itemid_sub_list[0]
-                item_name=itemid_sub_list[1]
-                item_key=itemid_sub_list[2]
+                itemid = itemid_sub_list[0]
+                item_name = itemid_sub_list[1]
+                item_key = itemid_sub_list[2]
+                history_type = itemid_sub_list[4]
                 debug_msg="itemid:%s"%itemid
                 self.logger.debug(debug_msg)
                 
                 report_min,report_max,report_avg = self.trend_get(itemid,time_from,time_till)
-                if history==3:
+                if history_type=="3":
                     report_min=int(report_min)
                     report_max=int(report_max)
                     report_avg=int(report_avg)
@@ -1869,8 +1870,8 @@ if __name__ == "__main__":
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history_get',nargs=4,metavar=('history_type','item_ID','time_from','time_till'),dest='history_get',help='查询history')
     # report
-    parser.add_argument('--report',nargs=4,metavar=('history_type','item_name','date_from','date_till'),dest='report',help='\
-                        eg: 0 "CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser.add_argument('--report',nargs=3,metavar=('item_name','date_from','date_till'),dest='report',help='\
+                        eg:"CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_available',nargs=3,metavar=('itemName','date_from','date_till'),dest='report_available',help='\
                         eg:"Agent ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_flow',nargs=2,metavar=('date_from','date_till'),dest='report_flow',help='\
@@ -1989,7 +1990,7 @@ if __name__ == "__main__":
         if args.history_get:
             zabbix.history_get(args.history_get[0],args.history_get[1],args.history_get[2],args.history_get[3])
         if args.report:
-            zabbix.report(args.report[0],args.report[1],args.report[2],args.report[3],export_xls,select_condition)
+            zabbix.report(args.report[0],args.report[1],args.report[2],export_xls,select_condition)
         if args.report_flow:
             zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls,hosts_file)
         if args.report_available:
