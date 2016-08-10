@@ -503,13 +503,20 @@ class zabbix_api:
                 return 0
 
     #}}}
-    # report
-    #{{{history_get(invalid)
-    def history_get(self,history='',item_ID='',time_from='',time_till=''): 
+    #{{{history_get
+    def history_get(self,history='',item_ID='',date_from='',date_till=''): 
+        dateFormat = "%Y-%m-%d %H:%M:%S"
+        try:
+            startTime =  time.strptime(date_from,dateFormat)
+            endTime =  time.strptime(date_till,dateFormat)
+        except:
+            err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
+        time_from = int(time.mktime(startTime))
+        time_till = int(time.mktime(endTime))
+
         history_data=[]
         history_data[:]=[]
               
-        #print history,item_ID,time_from,time_till     
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"history.get", 
@@ -534,30 +541,15 @@ class zabbix_api:
             print "Error as ", e 
         else: 
             response = json.loads(result.read()) 
-            #print response
             result.close() 
             if len(response['result']) == 0:
+                warn_msg("not have history_data")
                 debug_info=str([history,item_ID,time_from,time_till,"####not have history_data"])
                 self.logger.debug(debug_info)
-                return 0.0,0.0,0.0
+                return 0.0
             for history_info in response['result']:
-                history_data.append(history_info['value'])
-            history_value=my_sort.Stats(history_data)
-            history_min=history_value.min()
-            #print history_min,type(history_min)
-            history_max=history_value.max()
-            #print history_max,type(history_max)
-            history_avg=float('%0.4f'% history_value.avg())
-            #print history_avg,type(history_avg)
+                print history_info['value']
             
-            if history == '3':
-                history_min = int(history_min)
-                history_max = int(history_max)
-                history_avg = int(history_avg)
-            debug_info=str([history,item_ID,time_from,time_till,history_min,history_max,history_avg])
-            self.logger.debug(debug_info)
-            return (history_min,history_max,history_avg)
-
     #}}}
     #{{{_get_select_condition_info(select_condition)
     ##
@@ -672,7 +664,6 @@ class zabbix_api:
                 self.logger.debug(debug_msg)
                 
                 report_min,report_max,report_avg = self.trend_get(itemid,time_from,time_till)
-                #history_min,history_max,history_avg = self.history_get(history,itemid,time_from,time_till)
                 if history==3:
                     report_min=int(report_min)
                     report_max=int(report_max)
@@ -701,22 +692,6 @@ class zabbix_api:
         history_data=[]
         history_data[:]=[]
               
-        #print history,item_ID,time_from,time_till     
-        #data = json.dumps({ 
-        #                   "jsonrpc":"2.0", 
-        #                   "method":"history.get", 
-        #                   "params":{ 
-        #                             "time_from":time_from,
-        #                             "time_till":time_till,
-        #                             "output": "extend",
-        #                             "history": 3,
-        #                             "itemids": item_ID,
-        #                             "sortfield":"clock",
-        #                             "limit": 10080
-        #                             }, 
-        #                   "auth":self.user_login(), 
-        #                   "id":1, 
-        #                   }) 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"trend.get", 
@@ -1159,14 +1134,6 @@ class zabbix_api:
                 self.logger.debug(debug_info)
                 return 0.0,0.0,0.0
             for result_info in response['result']:
-                #print type(result_info['value_min'])
-                #if not cmp(result_info['value_min'], '0.0'):
-                #if result_info['value_min'] == "0.0000":
-                #    print result_info['value_min']
-                #    debug_info=str([result_info])
-                #    logging.debug(debug_info)
-                #else:
-                #    trend_min_data.append(result_info['value_min'])
                 trend_min_data.append(result_info['value_min'])
                     
                 trend_max_data.append(result_info['value_max'])
@@ -1174,19 +1141,10 @@ class zabbix_api:
             trend_min_data_all=my_sort.Stats(trend_min_data)
             trend_max_data_all=my_sort.Stats(trend_max_data)
             trend_avg_data_all=my_sort.Stats(trend_avg_data)
-            #print trend_min_data
-            #print trend_max_data
-            #print trend_avg_data
             trend_min=trend_min_data_all.min()
             trend_max=trend_max_data_all.max()
             trend_avg=float('%0.4f'% trend_avg_data_all.avg())
             
-            #if history == '3':
-            #    history_min = int(history_min)
-            #    history_max = int(history_max)
-            #    history_avg = int(history_avg)
-            #debug_info=str([history,item_ID,time_from,time_till,history_min,history_max,history_avg])
-            #logging.debug(debug_info)
             return (trend_min,trend_max,trend_avg)
     #}}}
     # template
@@ -1917,7 +1875,6 @@ if __name__ == "__main__":
                         eg:"Agent ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_flow',nargs=2,metavar=('date_from','date_till'),dest='report_flow',help='\
                         eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    #parser.add_argument('--trend_get',nargs=1,metavar=('item_ID'),dest='trend_get',help='查询item trend')
     # template
     parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
     parser.add_argument('--template_import',dest='template_import',nargs=1,metavar=('templatePath'),help='import template')
