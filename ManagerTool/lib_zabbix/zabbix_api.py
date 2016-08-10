@@ -15,23 +15,9 @@ import my_compare
 import unicodedata
 import XLSWriter
 import config
+from BLog import Log
 reload(sys)
 sys.setdefaultencoding("utf-8")
-#{{{logging
-import logging 
-logging.basicConfig(level=logging.DEBUG,
-		format='%(asctime)s%(filename)s[line:%(lineno)d] %(levelname)s%(message)s',
-		datefmt='%a,%d %b %Y %H:%M:%S',
-		filename='/tmp/zabbix.log',
-		filemode='a')
-
-
-#logging.debug('debug message')
-#logging.info('info message')
-#logging.warning('warning message')
-#logging.error('error message')
-#logging.critical('critical message')
-#}}}
 #{{{msg
 def err_msg(msg):
     print "\033[41;37m[Error]: %s \033[0m"%msg
@@ -47,7 +33,7 @@ def warn_msg(msg):
 
 #}}}
 class zabbix_api: 
-    def __init__(self,terminal_table): 
+    def __init__(self,terminal_table,debug=False): 
         if os.path.exists("zabbix_config.ini"):
             config = ConfigParser.ConfigParser()
             config.read("zabbix_config.ini")
@@ -63,6 +49,8 @@ class zabbix_api:
         self.header = {"Content-Type":"application/json"}
         self.terminal_table=terminal_table
         self.authID = self.user_login() 
+        logpath = "/tmp/zabbix_tool.log"
+        self.logger = Log(logpath,level="debug",is_console=debug, mbs=5, count=5)
 
     #{{{user_login
     def user_login(self): 
@@ -480,7 +468,7 @@ class zabbix_api:
         else: 
             response = json.loads(result.read()) 
             result.close() 
-            table_show.append(["itemid","name","key_"])
+            table_show.append(["itemid","name","key_","update_time"])
             if len(response['result']) == 0:
                 return 0
             item_list=[]
@@ -498,13 +486,13 @@ class zabbix_api:
                         item['name']=item['name'].replace(para,list_para[para_a])
 
                 if  len(itemName)==0:
-                    table_show.append([item['itemid'],item['name'],item['key_']])
+                    table_show.append([item['itemid'],item['name'],item['key_'],item['delay']])
                 else:
                     if item['name']==itemName:
-                        item_list.append([item['itemid'],item['name'],item['key_']])
+                        item_list.append([item['itemid'],item['name'],item['key_'],item['delay']])
                     else:
                         if my_compare.my_compare(item['name'],itemName):
-                            item_list.append([item['itemid'],item['name'],item['key_']])
+                            item_list.append([item['itemid'],item['name'],item['key_'],item['delay']])
             
             if len(itemName) == 0:
                 table=SingleTable(table_show)
@@ -550,7 +538,7 @@ class zabbix_api:
             result.close() 
             if len(response['result']) == 0:
                 debug_info=str([history,item_ID,time_from,time_till,"####not have history_data"])
-                logging.debug(debug_info)
+                self.logger.debug(debug_info)
                 return 0.0,0.0,0.0
             for history_info in response['result']:
                 history_data.append(history_info['value'])
@@ -567,7 +555,7 @@ class zabbix_api:
                 history_max = int(history_max)
                 history_avg = int(history_avg)
             debug_info=str([history,item_ID,time_from,time_till,history_min,history_max,history_avg])
-            logging.debug(debug_info)
+            self.logger.debug(debug_info)
             return (history_min,history_max,history_avg)
 
     #}}}
@@ -615,6 +603,8 @@ class zabbix_api:
     # @return 
     def report(self,history,itemName,date_from,date_till,export_xls,select_condition): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
+        info_msg=str(date_till)
+        self.logger.info(info_msg)
         #dateFormat = "%Y-%m-%d"
         try:
             startTime =  time.strptime(date_from,dateFormat)
@@ -622,7 +612,7 @@ class zabbix_api:
             sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
             title_table =  date_from + "~" + date_till
             info_msg=str(sheetName)
-            logging.info(info_msg)
+            self.logger.info(info_msg)
         except:
             err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
@@ -679,7 +669,7 @@ class zabbix_api:
                 item_name=itemid_sub_list[1]
                 item_key=itemid_sub_list[2]
                 debug_msg="itemid:%s"%itemid
-                logging.debug(debug_msg)
+                self.logger.debug(debug_msg)
                 
                 report_min,report_max,report_avg = self.trend_get(itemid,time_from,time_till)
                 #history_min,history_max,history_avg = self.history_get(history,itemid,time_from,time_till)
@@ -762,7 +752,7 @@ class zabbix_api:
             result.close() 
             if len(response['result']) == 0:
                 debug_info=str([item_ID,time_from,time_till,"####not have history_data"])
-                logging.debug(debug_info)
+                self.logger.debug(debug_info)
                 return 0,0
             sum_value = 0
             for result_info in response['result']:
@@ -770,7 +760,7 @@ class zabbix_api:
                 hour_num=eval(hour_num_string)
                 sum_value = sum_value + hour_num
                 debug_info=str([result_info['num']])
-                logging.debug(debug_info)
+                self.logger.debug(debug_info)
             trend_sum = len(response['result'])
             return trend_sum,sum_value
 
@@ -779,7 +769,6 @@ class zabbix_api:
     ##
     # @brief report_available
     #
-    # @param history
     # @param itemName
     # @param date_from
     # @param date_till
@@ -789,15 +778,13 @@ class zabbix_api:
     def report_available(self,itemName,date_from,date_till,export_xls,select_condition): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         #dateFormat = "%Y-%m-%d"
-        check_time=60
-        hour_check_num = int(3600/check_time)
         try:
             startTime =  time.strptime(date_from,dateFormat)
             endTime =  time.strptime(date_till,dateFormat)
             sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
             title_table =  date_from + "~" + date_till
             info_msg=str(sheetName)
-            logging.info(info_msg)
+            self.logger.info(info_msg)
         except:
             err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
@@ -851,14 +838,16 @@ class zabbix_api:
                 itemid=itemid_sub_list[0]
                 item_name=itemid_sub_list[1]
                 item_key=itemid_sub_list[2]
+                item_update_time=itemid_sub_list[3]
+                check_time=int(item_update_time)
+                hour_check_num = int(3600/check_time)
                 debug_msg="itemid:%s"%itemid
-                logging.debug(debug_msg)
+                self.logger.debug(debug_msg)
                 
-                #history_min,history_max,history_avg = self.agent_ping(itemid,time_from,time_till)
                 trend_sum,sum_value = self.agent_ping(itemid,time_from,time_till)
 
                 debug_msg="trend_sum:%d,sum_value:%d"%(trend_sum,sum_value)
-                logging.debug(debug_msg)
+                self.logger.debug(debug_msg)
                 if (sum_value > 0) and (trend_sum > 0):
                     sum_value = float(sum_value*100)
                     sum_check=trend_sum*hour_check_num
@@ -901,7 +890,7 @@ class zabbix_api:
             title_table =  date_from + "~" + date_till
             info_msg=str(sheetName)
             info_msg=str(sheetName)
-            logging.info(info_msg)
+            self.logger.info(info_msg)
         except:
             err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
@@ -1135,9 +1124,9 @@ class zabbix_api:
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"trend.get", 
+                           "time_from":time_from,
+                           "time_till":time_till,
                            "params":{ 
-                               "time_from":time_from,
-                               "time_till":time_till,
                                "output":[
                                    "itemid",
                                    "clock",
@@ -1167,9 +1156,17 @@ class zabbix_api:
             result.close() 
             if len(response['result']) == 0:
                 debug_info=str([itemID,time_from,time_till,"####not have trend_data"])
-                logging.debug(debug_info)
+                self.logger.debug(debug_info)
                 return 0.0,0.0,0.0
             for result_info in response['result']:
+                #print type(result_info['value_min'])
+                #if not cmp(result_info['value_min'], '0.0'):
+                #if result_info['value_min'] == "0.0000":
+                #    print result_info['value_min']
+                #    debug_info=str([result_info])
+                #    logging.debug(debug_info)
+                #else:
+                #    trend_min_data.append(result_info['value_min'])
                 trend_min_data.append(result_info['value_min'])
                     
                 trend_max_data.append(result_info['value_max'])
@@ -1177,10 +1174,19 @@ class zabbix_api:
             trend_min_data_all=my_sort.Stats(trend_min_data)
             trend_max_data_all=my_sort.Stats(trend_max_data)
             trend_avg_data_all=my_sort.Stats(trend_avg_data)
+            #print trend_min_data
+            #print trend_max_data
+            #print trend_avg_data
             trend_min=trend_min_data_all.min()
             trend_max=trend_max_data_all.max()
             trend_avg=float('%0.4f'% trend_avg_data_all.avg())
             
+            #if history == '3':
+            #    history_min = int(history_min)
+            #    history_max = int(history_max)
+            #    history_avg = int(history_avg)
+            #debug_info=str([history,item_ID,time_from,time_till,history_min,history_max,history_avg])
+            #logging.debug(debug_info)
             return (trend_min,trend_max,trend_avg)
     #}}}
     # template
@@ -1911,13 +1917,6 @@ if __name__ == "__main__":
                         eg:"Agent ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('--report_flow',nargs=2,metavar=('date_from','date_till'),dest='report_flow',help='\
                         eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    parser.add_argument('-f',nargs=1,metavar=('switch.file'),dest='switch_file',help='\
-                        eg: "switch1.txt"')
-    parser.add_argument('--table',nargs='?',metavar=('ON'),dest='terminal_table',default="OFF",help='show the terminaltables')
-    parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
-                        help='export data to xls')
-    parser.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
-                        help="add the xls's title")
     #parser.add_argument('--trend_get',nargs=1,metavar=('item_ID'),dest='trend_get',help='查询item trend')
     # template
     parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
@@ -1951,9 +1950,18 @@ if __name__ == "__main__":
     parser.add_argument('--hostid',nargs=1,metavar=('hostID'),dest='hostid',\
             help='eg:"10105,10106"')
     parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
-    parser.add_argument('-d','--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
+    parser.add_argument('--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
     parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
+    parser.add_argument('-f',nargs=1,metavar=('switch.file'),dest='switch_file',help='\
+                        eg: "switch1.txt"')
+    parser.add_argument('--table',dest='terminal_table',default="OFF",help='show the terminaltables',action="store_true")
+    parser.add_argument('-d',dest='debug_output',default="OFF",help='show the debug info',action="store_true")
+    parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
+                        help='export data to xls')
+    parser.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
+                        help="add the xls's title")
     parser.add_argument('-v','--version', action='version', version='%(prog)s 1.1.0')
+
     if len(sys.argv)==1:
         print parser.print_help()
     else:
@@ -1961,7 +1969,10 @@ if __name__ == "__main__":
         terminal_table = False
         if args.terminal_table != "OFF":
             terminal_table = True
-        zabbix=zabbix_api(terminal_table)
+        debug = False
+        if args.debug_output != "OFF":
+            debug = True
+        zabbix=zabbix_api(terminal_table,debug)
         export_xls = {"xls":"OFF",
                       "xls_name":"ceshi.xls",
                       "title":"OFF",

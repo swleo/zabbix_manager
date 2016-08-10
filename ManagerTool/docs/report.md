@@ -1,9 +1,6 @@
-# report
+## report报表
 
-
-<h2 name="1.4">1.4 report报表</h2>
-
-<h3>1.4.1 简单了解内容</h3>
+## 1 简单了解内容
 
 report 包括以下内容
 
@@ -19,7 +16,9 @@ report 包括以下内容
 + 文件系统的使用情况等
 + 支持选择特定主机组或者主机
 
-<h3>1.4.2 服务器可用性报表</h3>
+## 2 报表
+
+### 2.1 服务器可用性报表
 
 输出显示时加--table可以表框显示
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_available_table.jpg)
@@ -28,7 +27,7 @@ report 包括以下内容
 
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_available_xls.jpg)
 
-<h3>1.4.2 服务器日常使用报表</h3>
+### 2.2 服务器日常使用报表 
 
 输出显示时加--table可以表框显示
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_table.jpg)
@@ -39,8 +38,20 @@ report 包括以下内容
 
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_xls.jpg)
 
+## 3 内部算法
 
-<h3>1.4.3 提示</h3>
+### 3.1 服务器可用性报表
+
+可用性
+
+> * 分子是：每小时统计个数的总和
+> * 分母是：每小时应该统计的个数 * 小时数
+
+每小时的个数 = 3600(小时总秒数)/X(每X秒采集一次数据)
+
+X为item的delay值
+
+## 4 提示
 
 (1)不加条件项时默认输出所有主机信息，如果有特定选择可以选择以下方式
 
