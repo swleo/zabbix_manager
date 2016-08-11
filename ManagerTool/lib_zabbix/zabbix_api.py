@@ -504,8 +504,9 @@ class zabbix_api:
                 return 0
 
     #}}}
-    #{{{history_get
-    def history_get(self,history='',item_ID='',date_from='',date_till=''): 
+    # history
+    #{{{history
+    def history(self,itemName='',date_from='',date_till='',select_condition=''): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         try:
             startTime =  time.strptime(date_from,dateFormat)
@@ -515,6 +516,34 @@ class zabbix_api:
         time_from = int(time.mktime(startTime))
         time_till = int(time.mktime(endTime))
 
+        if select_condition["hostgroupID"] or select_condition["hostID"]:
+            host_list_g=[]
+            host_list_h=[]
+            if select_condition["hostgroupID"]:
+                host_list_g=self._host_get(hostgroupID=select_condition["hostgroupID"])
+            if select_condition["hostID"]:
+                host_list_h=self._host_get(hostID=select_condition["hostID"])
+            # 将host_list_h的全部元素添加到host_list_g的尾部
+            host_list_g.extend(host_list_h)
+
+            # 去除列表中重复的元素
+            host_list = list(set(host_list_g))
+        else:
+            host_list = self._host_get()
+        for host_info in host_list: 
+            itemid_all_list = self.item_get(host_info[0],itemName)
+            if itemid_all_list == 0:
+                continue
+            for itemid_sub_list in itemid_all_list:
+                itemid = itemid_sub_list[0]
+                item_name = itemid_sub_list[1]
+                item_key = itemid_sub_list[2]
+                history_type = itemid_sub_list[4]
+                self._history_get(history_type,itemid,time_from,time_till)
+            
+    #}}}
+    #{{{_history_get
+    def _history_get(self,history='',item_ID='',time_from='',time_till=''): 
         history_data=[]
         history_data[:]=[]
               
@@ -549,7 +578,7 @@ class zabbix_api:
                 self.logger.debug(debug_info)
                 return 0.0
             for history_info in response['result']:
-                print history_info['value']
+                print item_ID,history_info['value']
             
     #}}}
     #{{{_get_select_condition_info(select_condition)
@@ -690,9 +719,6 @@ class zabbix_api:
  #}}}
     #{{{agent_ping
     def agent_ping(self,item_ID='',time_from='',time_till=''): 
-        history_data=[]
-        history_data[:]=[]
-              
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"trend.get", 
@@ -727,7 +753,7 @@ class zabbix_api:
             #print response
             result.close() 
             if len(response['result']) == 0:
-                debug_info=str([item_ID,time_from,time_till,"####not have history_data"])
+                debug_info=str([item_ID,time_from,time_till,"####not have trend_data"])
                 self.logger.debug(debug_info)
                 return 0,0
             sum_value = 0
@@ -735,8 +761,8 @@ class zabbix_api:
                 hour_num_string = unicodedata.normalize('NFKD',result_info['num']).encode('ascii','ignore')
                 hour_num=eval(hour_num_string)
                 sum_value = sum_value + hour_num
-                debug_info=str([result_info['num']])
-                self.logger.debug(debug_info)
+                #debug_info=str([result_info['num']])
+                #self.logger.debug(debug_info)
             trend_sum = len(response['result'])
             return trend_sum,sum_value
 
@@ -810,20 +836,17 @@ class zabbix_api:
             if itemid_all_list == 0:
                 continue
             for itemid_sub_list in itemid_all_list:
-                
                 itemid=itemid_sub_list[0]
                 item_name=itemid_sub_list[1]
                 item_key=itemid_sub_list[2]
                 item_update_time=itemid_sub_list[3]
+                
                 check_time=int(item_update_time)
                 hour_check_num = int(3600/check_time)
-                debug_msg="itemid:%s"%itemid
+                trend_sum,sum_value = self.agent_ping(itemid,time_from,time_till)
+                debug_msg="itemid:%s update_time:%s trend_sum:%d,sum_value:%d"%(itemid,item_update_time,trend_sum,sum_value)
                 self.logger.debug(debug_msg)
                 
-                trend_sum,sum_value = self.agent_ping(itemid,time_from,time_till)
-
-                debug_msg="trend_sum:%d,sum_value:%d"%(trend_sum,sum_value)
-                self.logger.debug(debug_msg)
                 if (sum_value > 0) and (trend_sum > 0):
                     sum_value = float(sum_value*100)
                     sum_check=trend_sum*hour_check_num
@@ -1868,38 +1891,112 @@ if __name__ == "__main__":
     parser.add_argument('--hostgroup_add',nargs=1,dest='hostgroup_add',help='添加主机组')
     parser.add_argument('-H','--host',nargs='?',metavar=('HostName'),dest='listhost',default='host',help='查询主机')
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
-    parser.add_argument('--history_get',nargs=4,metavar=('history_type','item_ID','time_from','time_till'),dest='history_get',help='查询history')
-    # report
-    parser.add_argument('--report',nargs=3,metavar=('item_name','date_from','date_till'),dest='report',help='\
-                        eg:"CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    parser.add_argument('--report_available',nargs=3,metavar=('itemName','date_from','date_till'),dest='report_available',help='\
-                        eg:"Agent ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    parser.add_argument('--report_flow',nargs=2,metavar=('date_from','date_till'),dest='report_flow',help='\
-                        eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser.add_argument('--history',
+                        nargs=3,
+                        metavar=('item_name','time_from','time_till'),
+                        dest='history',
+                        help='eg:"CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    #{{{report
+    parser.add_argument('--report',
+                        nargs=3,
+                        metavar=('item_name','date_from','date_till'),
+                        dest='report',
+                        help='eg:"CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser.add_argument('--report_available',
+                        nargs=3,
+                        metavar=('itemName','date_from','date_till'),
+                        dest='report_available',
+                        help='eg:"ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser.add_argument('--report_flow',
+                        nargs=2,
+                        metavar=('date_from','date_till'),
+                        dest='report_flow',
+                        help='eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    #}}}
     # template
-    parser.add_argument('-T','--template',nargs='?',metavar=('TemplateName'),dest='listtemp',default='template',help='查询模板信息')
-    parser.add_argument('--template_import',dest='template_import',nargs=1,metavar=('templatePath'),help='import template')
+    parser.add_argument('-T','--template',
+                        nargs='?',
+                        metavar=('TemplateName'),
+                        dest='listtemp',
+                        default='template',
+                        help='查询模板信息')
+    parser.add_argument('--template_import',
+                        dest='template_import',
+                        nargs=1,metavar=('templatePath'),
+                        help='import template')
     # user
-    parser.add_argument('--usergroup',nargs='?',metavar=('name'),default='usergroup',dest='usergroup',help='Inquire usergroup ID')
-    parser.add_argument('--usergroup_add',dest='usergroup_add',nargs=2,metavar=('usergroupName','hostgroupName'),help='add usergroup')
-    parser.add_argument('--usergroup_del',dest='usergroup_del',nargs=1,metavar=('usergroupName'),help='delete usergroup')
-    parser.add_argument('--user',nargs='?',metavar=('name'),default='user',dest='user',help='Inquire user ID')
-    parser.add_argument('--user_add',dest='user_add',nargs=5,metavar=("userName","userPassword","usergroupName","mediaName","email"),help='add user')
+    parser.add_argument('--usergroup',
+                        nargs='?',
+                        metavar=('name'),
+                        default='usergroup',
+                        dest='usergroup',
+                        help='Inquire usergroup ID')
+    parser.add_argument('--usergroup_add',
+                        dest='usergroup_add',
+                        nargs=2,
+                        metavar=('usergroupName','hostgroupName'),
+                        help='add usergroup')
+    parser.add_argument('--usergroup_del',
+                        dest='usergroup_del',
+                        nargs=1,
+                        metavar=('usergroupName'),
+                        help='delete usergroup')
+    parser.add_argument('--user',
+                        nargs='?',
+                        metavar=('name'),
+                        default='user',
+                        dest='user',
+                        help='Inquire user ID')
+    parser.add_argument('--user_add',
+                        dest='user_add',
+                        nargs=5,
+                        metavar=("userName","userPassword","usergroupName","mediaName","email"),
+                        help='add user')
     # mediatype
-    parser.add_argument('--mediatype',nargs='?',metavar=('name'),default='mediatype',dest='mediatype',help='Inquire mediatype')
-    parser.add_argument('--mediatype_add',dest='mediatype_add',nargs=2,metavar=('mediaName','scriptName'),help='add mediatype script')
-    parser.add_argument('--mediatype_del',dest='mediatype_del',nargs=1,metavar=('mediatypeName'),help='delete mediatype')
+    parser.add_argument('--mediatype',
+                        nargs='?',
+                        metavar=('name'),
+                        default='mediatype',
+                        dest='mediatype',
+                        help='Inquire mediatype')
+    parser.add_argument('--mediatype_add',
+                        dest='mediatype_add',
+                        nargs=2,
+                        metavar=('mediaName','scriptName'),
+                        help='add mediatype script')
+    parser.add_argument('--mediatype_del',
+                        dest='mediatype_del',
+                        nargs=1,
+                        metavar=('mediatypeName'),
+                        help='delete mediatype')
     # drule
-    parser.add_argument('--drule',nargs='?',metavar=('name'),default='drule',dest='drule',\
+    parser.add_argument('--drule',
+                        nargs='?',
+                        metavar=('name'),
+                        default='drule',
+                        dest='drule',\
                         help='Inquire drule')
-    parser.add_argument('--drule_add',dest='drule_add',nargs=2,metavar=('druleName','iprange'),\
+    parser.add_argument('--drule_add',
+                        dest='drule_add',
+                        nargs=2,
+                        metavar=('druleName','iprange'),\
                         help='add drule')
-    parser.add_argument('--drule_del',dest='drule_del',nargs=1,metavar=('druleName'),\
+    parser.add_argument('--drule_del',
+                        dest='drule_del',
+                        nargs=1,
+                        metavar=('druleName'),
                         help='delete drule')
     # action
-    parser.add_argument('--action',nargs='?',metavar=('name'),default='action',dest='action',\
+    parser.add_argument('--action',
+                        nargs='?',
+                        metavar=('name'),
+                        default='action',
+                        dest='action',
                         help='Inquire action')
-    parser.add_argument('--action_discovery_add',dest='action_discovery_add',nargs=2,metavar=('actionName','hostgroupName'),\
+    parser.add_argument('--action_discovery_add',
+                        dest='action_discovery_add',
+                        nargs=2,
+                        metavar=('actionName','hostgroupName'),\
                         help='add action')
 
     # specialhost_get
@@ -1987,8 +2084,8 @@ if __name__ == "__main__":
                 zabbix.item_get(args.listitem[0])
             else:
                 zabbix.item_get(args.listitem[0],args.listitem[1])
-        if args.history_get:
-            zabbix.history_get(args.history_get[0],args.history_get[1],args.history_get[2],args.history_get[3])
+        if args.history:
+            zabbix.history(args.history[0],args.history[1],args.history[2],select_condition)
         if args.report:
             zabbix.report(args.report[0],args.report[1],args.report[2],export_xls,select_condition)
         if args.report_flow:
