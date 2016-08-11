@@ -429,7 +429,7 @@ class zabbix_api:
 
     #}}}
     # item
-    #{{{item_get
+    #{{{item_get(itemName)
     ##
     # @brief item_get 
     #
@@ -504,9 +504,45 @@ class zabbix_api:
                 return 0
 
     #}}}
+    #{{{_item_search(item_id)
+    ##
+    # @param item_ID
+    # @return list
+    # list_format
+    # [item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']]
+
+    def _item_search(self,item_ID=''): 
+        table_show=[]
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"item.get", 
+                           "params":{ 
+                                     "output":"extend",
+                                     "itemids":item_ID,
+                                     }, 
+                           "auth":self.user_login(), 
+                           "id":1, 
+                           }) 
+         
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            table_show.append(["itemid","name","key_","update_time","value_type"])
+            if len(response['result']) == 0:
+                return 0
+            return response['result'][0]['value_type']
+    #}}}
     # history
     #{{{history
-    def history(self,itemName='',date_from='',date_till='',select_condition=''): 
+    def history(self,item_ID='',date_from='',date_till=''): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         try:
             startTime =  time.strptime(date_from,dateFormat)
@@ -515,31 +551,8 @@ class zabbix_api:
             err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
         time_from = int(time.mktime(startTime))
         time_till = int(time.mktime(endTime))
-
-        if select_condition["hostgroupID"] or select_condition["hostID"]:
-            host_list_g=[]
-            host_list_h=[]
-            if select_condition["hostgroupID"]:
-                host_list_g=self._host_get(hostgroupID=select_condition["hostgroupID"])
-            if select_condition["hostID"]:
-                host_list_h=self._host_get(hostID=select_condition["hostID"])
-            # 将host_list_h的全部元素添加到host_list_g的尾部
-            host_list_g.extend(host_list_h)
-
-            # 去除列表中重复的元素
-            host_list = list(set(host_list_g))
-        else:
-            host_list = self._host_get()
-        for host_info in host_list: 
-            itemid_all_list = self.item_get(host_info[0],itemName)
-            if itemid_all_list == 0:
-                continue
-            for itemid_sub_list in itemid_all_list:
-                itemid = itemid_sub_list[0]
-                item_name = itemid_sub_list[1]
-                item_key = itemid_sub_list[2]
-                history_type = itemid_sub_list[4]
-                self._history_get(history_type,itemid,time_from,time_till)
+        history_type=self._item_search(item_ID)
+        self._history_get(history_type,item_ID,time_from,time_till)
             
     #}}}
     #{{{_history_get
@@ -1893,9 +1906,9 @@ if __name__ == "__main__":
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history',
                         nargs=3,
-                        metavar=('item_name','time_from','time_till'),
+                        metavar=('item_id','time_from','time_till'),
                         dest='history',
-                        help='eg:"CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+                        help='eg:23298 "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     #{{{report
     parser.add_argument('--report',
                         nargs=3,
@@ -2085,7 +2098,7 @@ if __name__ == "__main__":
             else:
                 zabbix.item_get(args.listitem[0],args.listitem[1])
         if args.history:
-            zabbix.history(args.history[0],args.history[1],args.history[2],select_condition)
+            zabbix.history(args.history[0],args.history[1],args.history[2])
         if args.report:
             zabbix.report(args.report[0],args.report[1],args.report[2],export_xls,select_condition)
         if args.report_flow:
