@@ -815,7 +815,7 @@ class zabbix_api:
             xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
             xlswriter.setcol_width([10,50,35,10,10,10],sheet_name=sheetName)
         time_from = int(time.mktime(startTime))+1
-        time_till = int(time.mktime(endTime))
+        time_till = int(time.mktime(endTime))-1
         if time_from > time_till:
             err_msg("date_till must after the date_from time")
 
@@ -861,14 +861,14 @@ class zabbix_api:
                 hour_check_num = int(3600/check_time)
                 trend_sum,sum_num_value,sum_avg_value = self.agent_ping(itemid,time_from,time_till)
                 
-                if (sum_num_value > 0) and (trend_sum > 0):
-                    sum_num_value_p = float(sum_num_value*100)
+                if (sum_avg_value > 0) and (trend_sum > 0):
+                    sum_avg_value_p = float(sum_avg_value*100)
                     sum_check=trend_sum*hour_check_num
-                    avg_ping=sum_num_value_p/sum_check
+                    avg_ping=sum_avg_value_p/trend_sum
                     if avg_ping == 100:
                         avg_ping =int(avg_ping)
                     else:
-                        avg_ping=float('%0.2f'% avg_ping)
+                        avg_ping=float('%0.4f'% avg_ping)
                     diff_ping = avg_ping - 100
                 else:
                     avg_ping = 0
