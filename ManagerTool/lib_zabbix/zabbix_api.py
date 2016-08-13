@@ -768,16 +768,19 @@ class zabbix_api:
             if len(response['result']) == 0:
                 debug_info=str([item_ID,time_from,time_till,"####not have trend_data"])
                 self.logger.debug(debug_info)
-                return 0,0
-            sum_value = 0
+                return 0,0,0
+            sum_num_value = 0
+            sum_avg_value = 0
             for result_info in response['result']:
                 hour_num_string = unicodedata.normalize('NFKD',result_info['num']).encode('ascii','ignore')
                 hour_num=eval(hour_num_string)
-                sum_value = sum_value + hour_num
-                #debug_info=str([result_info['num']])
-                #self.logger.debug(debug_info)
+                sum_num_value = sum_num_value + hour_num
+                
+                hour_avg_string = unicodedata.normalize('NFKD',result_info['value_avg']).encode('ascii','ignore')
+                hour_avg=eval(hour_avg_string)
+                sum_avg_value = sum_avg_value + hour_avg
             trend_sum = len(response['result'])
-            return trend_sum,sum_value
+            return trend_sum,sum_num_value,sum_avg_value
 
     #}}}
     #{{{report_available
@@ -856,14 +859,12 @@ class zabbix_api:
                 
                 check_time=int(item_update_time)
                 hour_check_num = int(3600/check_time)
-                trend_sum,sum_value = self.agent_ping(itemid,time_from,time_till)
-                debug_msg="itemid:%s update_time:%s trend_sum:%d,sum_value:%d"%(itemid,item_update_time,trend_sum,sum_value)
-                self.logger.debug(debug_msg)
+                trend_sum,sum_num_value,sum_avg_value = self.agent_ping(itemid,time_from,time_till)
                 
-                if (sum_value > 0) and (trend_sum > 0):
-                    sum_value = float(sum_value*100)
+                if (sum_num_value > 0) and (trend_sum > 0):
+                    sum_num_value_p = float(sum_num_value*100)
                     sum_check=trend_sum*hour_check_num
-                    avg_ping=sum_value/sum_check
+                    avg_ping=sum_num_value_p/sum_check
                     if avg_ping == 100:
                         avg_ping =int(avg_ping)
                     else:
@@ -872,13 +873,16 @@ class zabbix_api:
                 else:
                     avg_ping = 0
                     diff_ping = 0
+                
+                debug_msg="itemid:%s update_time:%s trend_sum:%d,sum_avg:%s,sum_num:%d,expected_value:%s"%(itemid,item_update_time,trend_sum,str(sum_avg_value),sum_num_value,str(sum_check))
+                self.logger.debug(debug_msg)
 
                 if self.terminal_table:
-                    table_show.append([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)])
+                    table_show.append([host_info[0],host_info[2],item_name,"100",str(avg_ping),str(diff_ping)])
                 else:
-                    print host_info[0],'\t',host_info[2],'\t',itemName,'\t',"100",'\t',avg_ping,'\t',diff_ping
+                    print host_info[0],'\t',host_info[2],'\t',item_name,'\t',"100",'\t',avg_ping,'\t',diff_ping
                 if export_xls["xls"] == "ON":
-                    xlswriter.writerow([host_info[0],host_info[2],itemName,"100",str(avg_ping),str(diff_ping)],sheet_name=sheetName,border=True)
+                    xlswriter.writerow([host_info[0],host_info[2],item_name,"100",str(avg_ping),str(diff_ping)],sheet_name=sheetName,border=True)
         print
         if self.terminal_table:
             table=SingleTable(table_show)
