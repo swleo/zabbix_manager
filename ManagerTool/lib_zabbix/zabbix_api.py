@@ -868,7 +868,7 @@ class zabbix_api:
                     if avg_ping == 100:
                         avg_ping =int(avg_ping)
                     else:
-                        avg_ping=float('%0.4f'% avg_ping)
+                        avg_ping=float('%0.2f'% avg_ping)
                     diff_ping = avg_ping - 100
                 else:
                     avg_ping = 0
