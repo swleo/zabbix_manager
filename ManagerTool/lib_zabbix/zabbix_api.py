@@ -637,8 +637,6 @@ class zabbix_api:
     # @return 
     def report(self,itemName,date_from,date_till,export_xls,select_condition): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
-        info_msg=str(date_till)
-        self.logger.info(info_msg)
         #dateFormat = "%Y-%m-%d"
         try:
             startTime =  time.strptime(date_from,dateFormat)
@@ -783,6 +781,12 @@ class zabbix_api:
             return trend_sum,sum_num_value,sum_avg_value
 
     #}}}
+    #{{{_diff_hour
+    def _diff_hour(self,date1,date2):
+        diff_seconds = date2 - date1
+        diff_hour = diff_seconds / 3600
+        return diff_hour
+    #}}}
     #{{{report_available
     ##
     # @brief report_available
@@ -793,7 +797,7 @@ class zabbix_api:
     # @param export_xls
     #
     # @return 
-    def report_available(self,itemName,date_from,date_till,export_xls,select_condition): 
+    def report_available(self,itemName,date_from,date_till,export_xls,select_condition,value_type=False): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         #dateFormat = "%Y-%m-%d"
         try:
@@ -801,8 +805,6 @@ class zabbix_api:
             endTime =  time.strptime(date_till,dateFormat)
             sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
             title_table =  date_from + "~" + date_till
-            info_msg=str(sheetName)
-            self.logger.info(info_msg)
         except:
             err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
@@ -816,6 +818,8 @@ class zabbix_api:
             xlswriter.setcol_width([10,50,35,10,10,10],sheet_name=sheetName)
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))-1
+        diff_hour = self._diff_hour(time_from,time_till)
+
         if time_from > time_till:
             err_msg("date_till must after the date_from time")
 
@@ -862,9 +866,22 @@ class zabbix_api:
                 trend_sum,sum_num_value,sum_avg_value = self.agent_ping(itemid,time_from,time_till)
                 
                 if (sum_avg_value > 0) and (trend_sum > 0):
+                    # 分子为trend_avg平均值之和
                     sum_avg_value_p = float(sum_avg_value*100)
                     sum_check=trend_sum*hour_check_num
-                    avg_ping=sum_avg_value_p/trend_sum
+
+                    # 默认0不入库，分母为时间小时差
+                    sum_value = diff_hour
+                    value_type_info = "null"
+                    # 如果0入库，分母为获取到的thrend数
+                    if value_type:
+                        sum_value = trend_sum
+                        value_type_info = "zero"
+
+                    avg_ping=sum_avg_value_p/sum_value
+
+                                
+
                     if avg_ping == 100:
                         avg_ping =int(avg_ping)
                     else:
@@ -874,7 +891,8 @@ class zabbix_api:
                     avg_ping = 0
                     diff_ping = 0
                 
-                debug_msg="itemid:%s update_time:%s trend_sum:%d,sum_avg:%s,sum_num:%d,expected_value:%s"%(itemid,item_update_time,trend_sum,str(sum_avg_value),sum_num_value,str(sum_check))
+                debug_msg="time[%s] hour[%s] itemid:%s update_time:%s trend_sum:%d,sum_avg:%s,sum_num:%d,expected_value:%s type:%s"\
+                        %(str(sheetName),str(diff_hour),itemid,item_update_time,trend_sum,str(sum_avg_value),sum_num_value,str(sum_check),value_type_info)
                 self.logger.debug(debug_msg)
 
                 if self.terminal_table:
@@ -904,7 +922,6 @@ class zabbix_api:
             endTime =  time.strptime(date_till,dateFormat)
             sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
             title_table =  date_from + "~" + date_till
-            info_msg=str(sheetName)
             info_msg=str(sheetName)
             self.logger.info(info_msg)
         except:
@@ -2032,6 +2049,7 @@ if __name__ == "__main__":
                         help='export data to xls')
     parser.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
                         help="add the xls's title")
+    parser.add_argument('--zero',dest='zero',default="OFF",help='入库时有0',action="store_true")
     parser.add_argument('-v','--version', action='version', version='%(prog)s 1.1.0')
 
     if len(sys.argv)==1:
@@ -2044,6 +2062,9 @@ if __name__ == "__main__":
         debug = False
         if args.debug_output != "OFF":
             debug = True
+        value_type = False
+        if args.zero != "OFF":
+            value_type = True
         zabbix=zabbix_api(terminal_table,debug)
         export_xls = {"xls":"OFF",
                       "xls_name":"ceshi.xls",
@@ -2108,7 +2129,7 @@ if __name__ == "__main__":
         if args.report_flow:
             zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls,hosts_file)
         if args.report_available:
-            zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls,select_condition)
+            zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls,select_condition,value_type)
         if args.hostgroup_add:
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
