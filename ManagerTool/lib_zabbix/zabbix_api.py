@@ -18,7 +18,6 @@ import config
 from BLog import Log
 reload(sys)
 sys.setdefaultencoding("utf-8")
-#{{{msg
 def err_msg(msg):
     print "\033[41;37m[Error]: %s \033[0m"%msg
     exit()
@@ -31,7 +30,6 @@ def info_msg(msg):
 def warn_msg(msg):
     print "\033[43;37m[Warning]: %s \033[0m"%msg
 
-#}}}
 class zabbix_api: 
     def __init__(self,terminal_table,debug=False): 
         if os.path.exists("zabbix_config.ini"):
@@ -52,7 +50,6 @@ class zabbix_api:
         logpath = "/tmp/zabbix_tool.log"
         self.logger = Log(logpath,level="debug",is_console=debug, mbs=5, count=5)
 
-    #{{{user_login
     def user_login(self): 
         data = json.dumps({
                            "jsonrpc": "2.0",
@@ -79,9 +76,6 @@ class zabbix_api:
             self.authID = response['result'] 
             return self.authID 
          
-    #}}}
-    # host
-    #{{{host_get
     ##
     # @brief host_get 
     # @param hostName
@@ -138,8 +132,6 @@ class zabbix_api:
                 table=SingleTable(table_show)
                 print(table.table)
 
-    #}}}
-    #{{{_host_get
     #  (1)Return all hosts.
     #  (2)Return only hosts that belong to the given groups.
     #  (3)Return only hosts with the given host IDs.
@@ -207,8 +199,6 @@ class zabbix_api:
                 all_host_list.append((host['hostid'],host['host'],host['name']))
             return all_host_list
 
-    #}}}
-    #{{{host_create
     def host_create(self, hostip,hostname,hostgroupName, templateName): 
         if self.host_get(hostname):
             print "\033[041m该主机已经添加!\033[0m" 
@@ -261,8 +251,6 @@ class zabbix_api:
             print "添加主机 : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (hostip, response['result']['hostids']) 
 
 
-    #}}}
-    #{{{host_disable
     def host_disable(self,hostip):
         data=json.dumps({
         "jsonrpc": "2.0",
@@ -287,8 +275,6 @@ class zabbix_api:
             print '----主机现在状态------------'
         print self.host_get(hostip)
                  
-    #}}}
-    #{{{host_delete
     def host_delete(self,hostid):
         hostid_list=[]
         #print type(hostid)
@@ -320,9 +306,7 @@ class zabbix_api:
 
             result.close() 
             print "主机 \033[041m %s\033[0m  已经删除 !"%hostid 
-    #}}}
     # hostgroup
-    #{{{hostgroup_get(name)
     def hostgroup_get(self, hostgroupName=''): 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
@@ -359,8 +343,6 @@ class zabbix_api:
                 self.hostgroupID = group['groupid'] 
                 return group['groupid'] 
 
-    #}}}
-    #{{{_hostgroup_get_name(id)
     def _hostgroup_get_name(self, groupid=''): 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
@@ -396,8 +378,6 @@ class zabbix_api:
                 #print "hostgroup:  \033[31m%s\033[0m\tgroupid : %s" %(group['name'],group['groupid'])
                 return group['name'] 
 
-    #}}}
-    #{{{hostgroup_create
     def hostgroup_create(self,hostgroupName):
 
         if self.hostgroup_get(hostgroupName):
@@ -427,9 +407,7 @@ class zabbix_api:
             print "\033[042m 添加主机组:%s\033[0m  hostgroupID : %s"%(hostgroupName,response['result']['groupids'])
 
 
-    #}}}
     # item
-    #{{{item_get(itemName)
     ##
     # @brief item_get 
     #
@@ -503,8 +481,6 @@ class zabbix_api:
             else:
                 return 0
 
-    #}}}
-    #{{{_item_search(item_id)
     ##
     # @param item_ID
     # @return list
@@ -539,9 +515,7 @@ class zabbix_api:
             if len(response['result']) == 0:
                 return 0
             return response['result'][0]['value_type']
-    #}}}
     # history
-    #{{{history
     def history(self,item_ID='',date_from='',date_till=''): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         try:
@@ -554,8 +528,6 @@ class zabbix_api:
         history_type=self._item_search(item_ID)
         self._history_get(history_type,item_ID,time_from,time_till)
             
-    #}}}
-    #{{{_history_get
     def _history_get(self,history='',item_ID='',time_from='',time_till=''): 
         history_data=[]
         history_data[:]=[]
@@ -593,8 +565,6 @@ class zabbix_api:
             for history_info in response['result']:
                 print item_ID,history_info['value']
             
-    #}}}
-    #{{{_get_select_condition_info(select_condition)
     ##
     # @return 
     def _get_select_condition_info(self,select_condition): 
@@ -624,8 +594,6 @@ class zabbix_api:
         else:
             output = u"主机:" + u"无" + "\n" + output
         return output
- #}}}
-    #{{{report
     ##
     # @brief report 
     #
@@ -654,9 +622,9 @@ class zabbix_api:
                 xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
             else:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
-
             xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
             xlswriter.setcol_width([10,50,35,10,10,10],sheet_name=sheetName)
+        
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
@@ -727,8 +695,6 @@ class zabbix_api:
         if export_xls["xls"] == 'ON':
             xlswriter.save()
         return 0
- #}}}
-    #{{{agent_ping
     def agent_ping(self,item_ID='',time_from='',time_till=''): 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
@@ -780,14 +746,10 @@ class zabbix_api:
             trend_sum = len(response['result'])
             return trend_sum,sum_num_value,sum_avg_value
 
-    #}}}
-    #{{{_diff_hour
     def _diff_hour(self,date1,date2):
         diff_seconds = date2 - date1
         diff_hour = diff_seconds / 3600
         return diff_hour
-    #}}}
-    #{{{report_available
     ##
     # @brief report_available
     #
@@ -862,6 +824,8 @@ class zabbix_api:
                 item_update_time=itemid_sub_list[3]
                 
                 check_time=int(item_update_time)
+                if not check_time:
+                    check_time = 60
                 hour_check_num = int(3600/check_time)
                 trend_sum,sum_num_value,sum_avg_value = self.agent_ping(itemid,time_from,time_till)
                 
@@ -909,8 +873,6 @@ class zabbix_api:
         if export_xls["xls"] == 'ON':
             xlswriter.save()
         return 0
- #}}}
-    #{{{report_flow
     ##
     # @return 
     def report_flow(self,date_from,date_till,export_xls,hosts_file="./switch"): 
@@ -1112,8 +1074,6 @@ class zabbix_api:
         if export_xls["xls"] == 'ON':
             xlswriter.save()
         return 0
- #}}}
-    #{{{alert_get
     def alert_get(self):
         data=json.dumps({
                 "jsonrpc": "2.0",
@@ -1139,8 +1099,6 @@ class zabbix_api:
             #print response['result']
             print response
             result.close() 
-    #}}}
-    #{{{trend_get
     ##
     # @brief trend_get 
     #
@@ -1204,9 +1162,7 @@ class zabbix_api:
             trend_avg=float('%0.4f'% trend_avg_data_all.avg())
             
             return (trend_min,trend_max,trend_avg)
-    #}}}
     # template
-    #{{{template_get
     def template_get(self,templateName=''): 
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
@@ -1251,8 +1207,6 @@ class zabbix_api:
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
-    #}}}
-    #{{{configuration
     def configuration_import(self,template): 
         rules = {
             'applications': {
@@ -1334,9 +1288,7 @@ class zabbix_api:
             result.close() 
             print response['result']
             #print "add user : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (usergroupName, response['result']['userids'][0]) 
-    #}}}
     # user
-    #{{{user_get
     ##
     # @brief user_get 
     #
@@ -1390,8 +1342,6 @@ class zabbix_api:
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
-    #}}}
-    #{{{user_create
     def user_create(self, userName,userPassword,usergroupName,mediaName,email): 
         if self.user_get(userName):
             print "\033[041mthis userName is exists\033[0m" 
@@ -1436,9 +1386,7 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "add user : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (usergroupName, response['result']['userids'][0]) 
-    #}}}
     # usergroup
-    #{{{usergroup_get
     ##
     # @brief host_get 
     #
@@ -1494,8 +1442,6 @@ class zabbix_api:
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
-    #}}}
-    #{{{usergroup_create
     def usergroup_create(self, usergroupName,hostgroupName): 
         if self.usergroup_get(usergroupName):
             print "\033[041mthis usergroupName is exists\033[0m" 
@@ -1528,8 +1474,6 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "add usergroup : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (usergroupName, response['result']['usrgrpids'][0]) 
-    #}}}
-    #{{{usergroup_del
     def usergroup_del(self,usergroupName):
         usergroup_list=[]
         for i in usergroupName.split(','):
@@ -1558,9 +1502,7 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "usergroup \033[042m %s\033[0m  delete OK !"% usergroupName 
-    #}}}
     # mediatype
-    #{{{mediatype_get
     ##
     # @brief mediatype_get 
     #
@@ -1613,8 +1555,6 @@ class zabbix_api:
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
-    #}}}
-    #{{{mediatype_create
     # mediatypeType Possible values: 
     # 0 - email; 
     # 1 - script; 
@@ -1650,8 +1590,6 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "add mediatype : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (mediatypeName, response['result']['mediatypeids'][0]) 
-    #}}}
-    #{{{mediatype_del
     def mediatype_del(self,mediatypeName):
         mediatype_list=[]
         for i in mediatypeName.split(','):
@@ -1680,9 +1618,7 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "mediatype \033[042m %s\033[0m  delete OK !"% mediatypeName 
-    #}}}
     # drule(discoveryRules)
-    #{{{drule_get
     def drule_get(self,druleName=''): 
         data=json.dumps({
                 "jsonrpc": "2.0",
@@ -1731,8 +1667,6 @@ class zabbix_api:
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
-    #}}}
-    #{{{drule_create
     def drule_create(self, druleName,iprange): 
         if self.drule_get(druleName):
             print "\033[041mthis druleName is exists\033[0m" 
@@ -1770,13 +1704,11 @@ class zabbix_api:
             result.close() 
             #print response
             print "add drule : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (druleName, response['result']['druleids'][0]) 
-    #}}}
     # action
     # eventsource 0 triggers
     # eventsource 1 discovery
     # eventsource 2 auto registration
     # eventsource 3 internal
-    #{{{action_get
     def action_get(self,actionName=''): 
         data=json.dumps({
                 "jsonrpc": "2.0",
@@ -1828,8 +1760,6 @@ class zabbix_api:
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
-    #}}}
-    #{{{action_discovery_create
     def action_discovery_create(self, actionName,hostgroupName): 
         if self.drule_get(actionName):
             print "\033[041mthis druleName is exists\033[0m" 
@@ -1916,7 +1846,6 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "add action : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" %(actionName, response['result']['actionids'][0]) 
-    #}}}
 
 
 if __name__ == "__main__":
