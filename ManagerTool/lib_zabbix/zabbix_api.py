@@ -418,7 +418,7 @@ class zabbix_api:
     # list_format
     # [item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']]
 
-    def item_get(self, host_ID='',itemName=''): 
+    def item_get(self, host_ID='',itemName='',show=True): 
         if  len(host_ID)==0:
             print "ERR- host_ID is null"
             return 0
@@ -466,14 +466,15 @@ class zabbix_api:
 
                 if  len(itemName)==0:
                     table_show.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']])
+                    item_list.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type'],item['history']])
                 else:
                     if item['name']==itemName:
-                        item_list.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']])
+                        item_list.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type'],item['history']])
                     else:
                         if my_compare.my_compare(item['name'],itemName):
-                            item_list.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']])
+                            item_list.append([item['itemid'],item['name'],item['key_'],item['delay'],item['value_type'],item['history']])
             
-            if len(itemName) == 0:
+            if (len(itemName) == 0) and show:
                 table=SingleTable(table_show)
                 print(table.table)
             if len(item_list):
@@ -1846,6 +1847,33 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "add action : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" %(actionName, response['result']['actionids'][0]) 
+    def mysql_quota(self): 
+        # 获取host列表
+        host_list = self._host_get()
+        sum_history_quota = 0
+        sum_trends_quota = 0
+        sum_event_quota = 0
+        sum_item_num = 0
+        for host_info in host_list: 
+            # 获取host中的item
+            itemid_all_list = self.item_get(host_info[0],show=False)
+            if itemid_all_list == 0:
+                continue
+            itemid_num = len(itemid_all_list)
+            sum_item_num = sum_item_num + itemid_num
+            for itemid_sub_list in itemid_all_list:
+                item_history=int(itemid_sub_list[5])
+                item_update_time=int(itemid_sub_list[3])
+                if not item_update_time:
+                    item_update_time = 60
+                history_quota = item_history * 24 * 3600 * 50 / item_update_time
+                sum_history_quota = sum_history_quota + history_quota
+                
+        sum_trends_quota = 365 * sum_item_num * 24 * 128
+        sum_event_quota = 365 * sum_item_num * 24 * 130 * 5
+        mysql_quota = (sum_history_quota + sum_trends_quota + sum_event_quota)/1000000000.0
+        print "item_num:%d Use:%fG"%(sum_item_num,mysql_quota)
+        return 0
 
 
 if __name__ == "__main__":
@@ -1979,7 +2007,8 @@ if __name__ == "__main__":
     parser.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
                         help="add the xls's title")
     parser.add_argument('--zero',dest='zero',default="OFF",help='入库时有0',action="store_true")
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.1.0')
+    parser.add_argument('--mysql',dest='mysql_quota',help='mysql使用空间',action="store_true")
+    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.1.1')
 
     if len(sys.argv)==1:
         print parser.print_help()
@@ -1995,6 +2024,8 @@ if __name__ == "__main__":
         if args.zero != "OFF":
             value_type = True
         zabbix=zabbix_api(terminal_table,debug)
+        if args.mysql_quota:
+            zabbix.mysql_quota()
         export_xls = {"xls":"OFF",
                       "xls_name":"ceshi.xls",
                       "title":"OFF",

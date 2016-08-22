@@ -3,11 +3,12 @@
 ## 【目录】
 ----
 
-[1 配置 ]  
+[1 功能 ]  
 ........[1.1 配置报警](docs/alert.md)  
 ........[1.2 导入模板](docs/template.md)  
 ........[1.3 agent自动加入监控](docs/config.md)  
 ........[1.4 导出report报表](docs/report.md)  
+........[1.5 预估mysql存储大小](docs/mysql.md)  
 
 [2 调试 ]  
 ........[2.1 log](docs/log.md)  
