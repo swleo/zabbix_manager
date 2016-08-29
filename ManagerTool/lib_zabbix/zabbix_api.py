@@ -417,7 +417,6 @@ class zabbix_api:
     # @return list
     # list_format
     # [item['itemid'],item['name'],item['key_'],item['delay'],item['value_type']]
-
     def item_get(self, host_ID='',itemName='',show=True): 
         if  len(host_ID)==0:
             print "ERR- host_ID is null"
@@ -1874,6 +1873,40 @@ class zabbix_api:
         mysql_quota = (sum_history_quota + sum_trends_quota + sum_event_quota)/1000000000.0
         print "item_num:%d Use:%fG"%(sum_item_num,mysql_quota)
         return 0
+    
+    #triggers
+    def triggers_get(self, host_ID='',show=True): 
+        if  len(host_ID)==0:
+            print "ERR- host_ID is null"
+            return 0
+
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"trigger.get", 
+                           "params":{ 
+                                     "output":"extend",
+                                     "hostids":host_ID,
+                                     }, 
+                           "auth":self.user_login(), 
+                           "id":1, 
+                           }) 
+         
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            if len(response['result']) == 0:
+                return 0
+            for trigger in response['result']:
+                print trigger
+
 
 
 if __name__ == "__main__":
@@ -2009,6 +2042,8 @@ if __name__ == "__main__":
     parser.add_argument('--zero',dest='zero',default="OFF",help='入库时有0',action="store_true")
     parser.add_argument('--mysql',dest='mysql_quota',help='mysql使用空间',action="store_true")
     parser.add_argument('-v','--version', action='version', version='%(prog)s 1.1.1')
+    # triggers
+    parser.add_argument('--triggers',nargs=1,metavar=('HostID'),dest='triggers_get',help='查询triggers')
 
     if len(sys.argv)==1:
         print parser.print_help()
@@ -2166,3 +2201,8 @@ if __name__ == "__main__":
             zabbix.host_disable(args.disablehost)
         if args.deletehost:
             zabbix.host_delete(args.deletehost[0])
+        ############
+        # triggers
+        ############
+        if args.triggers_get:
+            zabbix.triggers_get(args.triggers_get[0])
