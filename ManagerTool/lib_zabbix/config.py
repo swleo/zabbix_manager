@@ -1,10 +1,8 @@
 #!/usr/bin/python
 #coding:utf8
-VERSION=145
 import os
 import sys
 import re
-#{{{read_config
 def read_config(hosts_file):
     host=[]
     host_file=open(hosts_file)
@@ -19,7 +17,6 @@ def read_config(hosts_file):
         host.append((host_info[0],host_info[1],host_info[2],host_info[3]))
     return host
 
-#}}}
 if __name__ == "__main__":
     hosts_file="./switch"
     host_info = read_config(hosts_file)

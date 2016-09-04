@@ -136,6 +136,7 @@ password = zabbix
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_del.jpg)
 <h2 name="3">3 version</h2>
 ----
+* v1.1.2，2016-09-05 add zabbix_manager gui
 * v1.1.1，2016-08-22 add mysql_quota
 * v1.1.0，2016-07-14 release 1.1.0
 * v1.0.8，2016-07-13 add report

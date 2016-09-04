@@ -1,21 +1,27 @@
 #!/usr/bin/python 
 #coding:utf-8 
+__version__ = "1.1.2"
  
 import json 
 import urllib2 
 from urllib2 import URLError 
 import ConfigParser
-import sys,argparse
+import sys
 import os
+import time
+import unicodedata
+import config
+
+root_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(root_path, 'w_lib'))
+
 from colorclass import Color
 from terminaltables import SingleTable
 import my_sort
-import time
 import my_compare
-import unicodedata
-import XLSWriter
-import config
+from XLSWriter import XLSWriter
 from BLog import Log
+import argparse
 reload(sys)
 sys.setdefaultencoding("utf-8")
 def err_msg(msg):
@@ -31,10 +37,11 @@ def warn_msg(msg):
     print "\033[43;37m[Warning]: %s \033[0m"%msg
 
 class zabbix_api: 
-    def __init__(self,terminal_table,debug=False): 
+    def __init__(self,terminal_table,debug=False,output=True): 
         if os.path.exists("zabbix_config.ini"):
             config = ConfigParser.ConfigParser()
             config.read("zabbix_config.ini")
+            self.output = output
             self.server = config.get("zabbixserver", "server")
             self.port = config.get("zabbixserver", "port")
             self.user = config.get("zabbixserver", "user")
@@ -339,7 +346,7 @@ class zabbix_api:
                 if  len(hostgroupName)==0:
                     print "hostgroup:  \033[31m%s\033[0m \tgroupid : %s" %(group['name'],group['groupid'])
             else:
-                print "hostgroup:  \033[31m%s\033[0m\tgroupid : %s" %(group['name'],group['groupid'])
+                #print "hostgroup:  \033[31m%s\033[0m\tgroupid : %s" %(group['name'],group['groupid'])
                 self.hostgroupID = group['groupid'] 
                 return group['groupid'] 
 
@@ -854,6 +861,8 @@ class zabbix_api:
                 else:
                     avg_ping = 0
                     diff_ping = 0
+                    sum_check = -1
+                    value_type_info = "-1"
                 
                 debug_msg="time[%s] hour[%s] itemid:%s update_time:%s trend_sum:%d,sum_avg:%s,sum_num:%d,expected_value:%s type:%s"\
                         %(str(sheetName),str(diff_hour),itemid,item_update_time,trend_sum,str(sum_avg_value),sum_num_value,str(sum_check),value_type_info)
@@ -1190,10 +1199,7 @@ class zabbix_api:
             if self.terminal_table:
                 table_show=[]
                 table_show.append(["template","id"])
-            else:
-                print "template","id"
             result.close() 
-            #print response
             for template in response['result']:                
                 if len(templateName)==0:
                     if self.terminal_table:
@@ -1202,7 +1208,7 @@ class zabbix_api:
                         print "template : \033[31m%s\033[0m\t  id : %s" % (template['name'], template['templateid'])
                 else:
                     self.templateID = response['result'][0]['templateid'] 
-                    print "Template Name :  \033[31m%s\033[0m "%templateName
+                    #print "Template Name :  \033[31m%s\033[0m "%templateName
                     return response['result'][0]['templateid']
             if self.terminal_table:
                 table=SingleTable(table_show)
@@ -1737,7 +1743,7 @@ class zabbix_api:
         else: 
             response = json.loads(result.read()) 
             result.close() 
-            print "drule sum: \033[31m%s\033[0m"%(len(response['result']))
+            #print "drule sum: \033[31m%s\033[0m"%(len(response['result']))
             if not len(actionName):
                 if self.terminal_table:
                     table_show=[]
@@ -1756,12 +1762,104 @@ class zabbix_api:
                     else:
                         print action['actionid'],action['name'],eventsource[action['eventsource']],status[action['status']]
                 else:
-                    return action['druleid']
+                    return action['actionid']
             if self.terminal_table:
                 table=SingleTable(table_show)
                 print(table.table)
+    
+    def action_autoreg_create(self, actionName,hostgroupName): 
+        if self.action_get(actionName):
+            output_print={}
+            output_print["status"]="ERR"
+            output_print["output"]="this druleName is exists"
+            if self.output:
+                print json.dumps(output_print)
+            return json.dumps(output_print)
+
+        hostgroupID = self.hostgroup_get(hostgroupName)
+        if not hostgroupID:
+            output_print={}
+            output_print["status"]="ERR"
+            output_print["output"]="this hostgroup is not exists"
+            if self.output:
+                print json.dumps(output_print)
+            return json.dumps(output_print)
+        templateName = "Template OS Linux"
+        templateID=self.template_get(templateName)
+        data = json.dumps({ 
+                           "jsonrpc":"2.0", 
+                           "method":"action.create", 
+                           "params": {
+                               "name": actionName,
+                               "eventsource": 2,
+                               "status": 0,
+                               "esc_period": 0,
+                               "filter": {
+                                   "evaltype": 0,
+                                   "conditions": [
+                                        {
+                                            "conditiontype": 24,
+                                            "operator": 2,
+                                            "value": "Linux"
+                                        }
+                                   ]
+                               },
+                               "operations": [
+                                    {
+                                        "operationtype": 2,
+                                        "esc_step_from": 1,
+                                        "esc_period": 0,
+                                        "esc_step_to": 1
+                                    },
+                                    {
+                                        "operationtype": 4,
+                                        "esc_step_from": 2,
+                                        "esc_period": 0,
+                                        "opgroup": [
+                                            {
+                                                "groupid":hostgroupID
+                                            }
+                                        ],
+                                        "esc_step_to": 2
+                                    },
+                                    {
+                                        "operationtype": 6,
+                                        "esc_step_from": 3,
+                                        "esc_period": 0,
+                                        "optemplate": [
+                                            {
+                                                "templateid":templateID
+                                            }
+                                        ],
+                                        "esc_step_to": 3
+                                    }
+                                ]
+                           },
+                           "auth": self.user_login(), 
+                           "id":1                   
+        }) 
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+
+            output_print={}
+            output_print["status"]="OK"
+            output_print["output"]="add action:%s id:%s" %(actionName, response['result']['actionids'][0]) 
+            if self.output:
+                print json.dumps(output_print)
+            return json.dumps(output_print)
+    
     def action_discovery_create(self, actionName,hostgroupName): 
-        if self.drule_get(actionName):
+        if self.action_get(actionName):
             print "\033[041mthis druleName is exists\033[0m" 
             sys.exit(1)
 
@@ -1846,6 +1944,7 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close() 
             print "add action : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" %(actionName, response['result']['actionids'][0]) 
+
     def mysql_quota(self): 
         # 获取host列表
         host_list = self._host_get()
@@ -1911,137 +2010,178 @@ class zabbix_api:
 
 if __name__ == "__main__":
     parser=argparse.ArgumentParser(description='zabbix  api ',usage='%(prog)s [options]')
-    parser.add_argument('-G','--group',nargs='?',metavar=('GroupName'),dest='listgroup',default='group',help='查询主机组')
-    parser.add_argument('--hostgroup_add',nargs=1,dest='hostgroup_add',help='添加主机组')
-    parser.add_argument('-H','--host',nargs='?',metavar=('HostName'),dest='listhost',default='host',help='查询主机')
+   
+    #####################################
+    parser_host = parser.add_argument_group('host')
+    parser_host.add_argument('--group',nargs='?',metavar=('GroupName'),dest='listgroup',default='group',help='查询主机组')
+    parser_host.add_argument('--hostgroup_add',
+                        nargs=1,
+                        metavar=('GroupName'),
+                        dest='hostgroup_add',
+                        help='添加主机组')
+    parser_host.add_argument('--host',
+                             nargs='?',
+                             metavar=('HostName'),
+                             dest='listhost',
+                             default='host',
+                             help='查询主机')
+    parser_host.add_argument('--add-host',
+                        dest='addhost',
+                        nargs=4,
+                        metavar=('192.168.2.1',
+                                 'hostname_ceshi1', 
+                                 'test01,test02', 
+                                 'Template01,Template02'),
+                        help='添加主机,多个主机组或模板使用分号')
+    parser_host.add_argument('--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
+    parser_host.add_argument('--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
+    
+    #####################################
+    parser_report = parser.add_argument_group('report')
+    parser_report.add_argument('--report',
+                        nargs=3,
+                        metavar=('item_name','date_from','date_till'),
+                        dest='report',
+                        help='eg:"CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser_report.add_argument('--report_available',
+                        nargs=3,
+                        metavar=('itemName','date_from','date_till'),
+                        dest='report_available',
+                        help='eg:"ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser_report.add_argument('--report_flow',
+                        nargs=2,
+                        metavar=('date_from','date_till'),
+                        dest='report_flow',
+                        help='eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    # template
+    #####################################
+    parser_template = parser.add_argument_group('template')
+    parser_template.add_argument('--template',
+                        nargs='?',
+                        metavar=('TemplateName'),
+                        dest='listtemp',
+                        default='template',
+                        help='查询模板信息')
+    parser_template.add_argument('--template_import',
+                        dest='template_import',
+                        nargs=1,metavar=('templatePath'),
+                        help='import template')
+    # user
+    #####################################
+    parser_user = parser.add_argument_group('user')
+    parser_user.add_argument('--usergroup',
+                        nargs='?',
+                        metavar=('name'),
+                        default='usergroup',
+                        dest='usergroup',
+                        help='Inquire usergroup ID')
+    parser_user.add_argument('--usergroup_add',
+                        dest='usergroup_add',
+                        nargs=2,
+                        metavar=('usergroupName','hostgroupName'),
+                        help='add usergroup')
+    parser_user.add_argument('--usergroup_del',
+                        dest='usergroup_del',
+                        nargs=1,
+                        metavar=('usergroupName'),
+                        help='delete usergroup')
+    parser_user.add_argument('--user',
+                        nargs='?',
+                        metavar=('name'),
+                        default='user',
+                        dest='user',
+                        help='Inquire user ID')
+    parser_user.add_argument('--user_add',
+                        dest='user_add',
+                        nargs=5,
+                        metavar=("userName","userPassword","usergroupName","mediaName","email"),
+                        help='add user')
+    # mediatype
+    #####################################
+    parser_media = parser.add_argument_group('media')
+    parser_media.add_argument('--mediatype',
+                        nargs='?',
+                        metavar=('name'),
+                        default='mediatype',
+                        dest='mediatype',
+                        help='Inquire mediatype')
+    parser_media.add_argument('--mediatype_add',
+                        dest='mediatype_add',
+                        nargs=2,
+                        metavar=('mediaName','scriptName'),
+                        help='add mediatype script')
+    parser_media.add_argument('--mediatype_del',
+                        dest='mediatype_del',
+                        nargs=1,
+                        metavar=('mediatypeName'),
+                        help='delete mediatype')
+    # drule
+    #####################################
+    parser_drule = parser.add_argument_group('drule')
+    parser_drule.add_argument('--drule',
+                        nargs='?',
+                        metavar=('name'),
+                        default='drule',
+                        dest='drule',\
+                        help='Inquire drule')
+    parser_drule.add_argument('--drule_add',
+                        dest='drule_add',
+                        nargs=2,
+                        metavar=('druleName','iprange'),\
+                        help='add drule')
+    parser_drule.add_argument('--drule_del',
+                        dest='drule_del',
+                        nargs=1,
+                        metavar=('druleName'),
+                        help='delete drule')
+    # action
+    #####################################
+    parser_action = parser.add_argument_group('action')
+    parser_action.add_argument('--action',
+                        nargs='?',
+                        metavar=('name'),
+                        default='action',
+                        dest='action',
+                        help='Inquire action')
+    parser_action.add_argument('--action_discovery_add',
+                        dest='action_discovery_add',
+                        nargs=2,
+                        metavar=('actionName','hostgroupName'),\
+                        help='add action')
+    
+    parser_action.add_argument('--action_autoreg_add',
+                        dest='action_autoreg_add',
+                        nargs=2,
+                        metavar=('actionName','hostgroupName'),\
+                        help='add action')
+
+    # specialhost_get
+    #####################################
+    parser_condition = parser.add_argument_group('condition')
+    parser_condition.add_argument('--hostgroupid',nargs=1,metavar=('hostgroupID'),dest='hostgroupid',\
+            help='eg:"2,3,4"')
+    parser_condition.add_argument('--hostid',nargs=1,metavar=('hostID'),dest='hostid',\
+            help='eg:"10105,10106"')
+    parser_condition.add_argument('--zero',dest='zero',default="OFF",help='入库时有0',action="store_true")
+    
+    #####################################
+    parser_output = parser.add_argument_group('output_input')
+    parser_output.add_argument('-f',nargs=1,metavar=('switch.file'),dest='switch_file',help='\
+                        eg: "switch1.txt"')
+    parser_output.add_argument('--table',dest='terminal_table',default="OFF",help='show the terminaltables',action="store_true")
+    parser_output.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
+                        help='export data to xls')
+    parser_output.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
+                        help="add the xls's title")
+    parser.add_argument('--mysql',dest='mysql_quota',help='mysql使用空间',action="store_true")
+    parser.add_argument('-v', action='version', version=__version__)
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
     parser.add_argument('--history',
                         nargs=3,
                         metavar=('item_id','time_from','time_till'),
                         dest='history',
                         help='eg:23298 "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    #{{{report
-    parser.add_argument('--report',
-                        nargs=3,
-                        metavar=('item_name','date_from','date_till'),
-                        dest='report',
-                        help='eg:"CPU" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    parser.add_argument('--report_available',
-                        nargs=3,
-                        metavar=('itemName','date_from','date_till'),
-                        dest='report_available',
-                        help='eg:"ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    parser.add_argument('--report_flow',
-                        nargs=2,
-                        metavar=('date_from','date_till'),
-                        dest='report_flow',
-                        help='eg: "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
-    #}}}
-    # template
-    parser.add_argument('-T','--template',
-                        nargs='?',
-                        metavar=('TemplateName'),
-                        dest='listtemp',
-                        default='template',
-                        help='查询模板信息')
-    parser.add_argument('--template_import',
-                        dest='template_import',
-                        nargs=1,metavar=('templatePath'),
-                        help='import template')
-    # user
-    parser.add_argument('--usergroup',
-                        nargs='?',
-                        metavar=('name'),
-                        default='usergroup',
-                        dest='usergroup',
-                        help='Inquire usergroup ID')
-    parser.add_argument('--usergroup_add',
-                        dest='usergroup_add',
-                        nargs=2,
-                        metavar=('usergroupName','hostgroupName'),
-                        help='add usergroup')
-    parser.add_argument('--usergroup_del',
-                        dest='usergroup_del',
-                        nargs=1,
-                        metavar=('usergroupName'),
-                        help='delete usergroup')
-    parser.add_argument('--user',
-                        nargs='?',
-                        metavar=('name'),
-                        default='user',
-                        dest='user',
-                        help='Inquire user ID')
-    parser.add_argument('--user_add',
-                        dest='user_add',
-                        nargs=5,
-                        metavar=("userName","userPassword","usergroupName","mediaName","email"),
-                        help='add user')
-    # mediatype
-    parser.add_argument('--mediatype',
-                        nargs='?',
-                        metavar=('name'),
-                        default='mediatype',
-                        dest='mediatype',
-                        help='Inquire mediatype')
-    parser.add_argument('--mediatype_add',
-                        dest='mediatype_add',
-                        nargs=2,
-                        metavar=('mediaName','scriptName'),
-                        help='add mediatype script')
-    parser.add_argument('--mediatype_del',
-                        dest='mediatype_del',
-                        nargs=1,
-                        metavar=('mediatypeName'),
-                        help='delete mediatype')
-    # drule
-    parser.add_argument('--drule',
-                        nargs='?',
-                        metavar=('name'),
-                        default='drule',
-                        dest='drule',\
-                        help='Inquire drule')
-    parser.add_argument('--drule_add',
-                        dest='drule_add',
-                        nargs=2,
-                        metavar=('druleName','iprange'),\
-                        help='add drule')
-    parser.add_argument('--drule_del',
-                        dest='drule_del',
-                        nargs=1,
-                        metavar=('druleName'),
-                        help='delete drule')
-    # action
-    parser.add_argument('--action',
-                        nargs='?',
-                        metavar=('name'),
-                        default='action',
-                        dest='action',
-                        help='Inquire action')
-    parser.add_argument('--action_discovery_add',
-                        dest='action_discovery_add',
-                        nargs=2,
-                        metavar=('actionName','hostgroupName'),\
-                        help='add action')
-
-    # specialhost_get
-    parser.add_argument('--hostgroupid',nargs=1,metavar=('hostgroupID'),dest='hostgroupid',\
-            help='eg:"2,3,4"')
-    parser.add_argument('--hostid',nargs=1,metavar=('hostID'),dest='hostid',\
-            help='eg:"10105,10106"')
-    parser.add_argument('-C','--add-host',dest='addhost',nargs=4,metavar=('192.168.2.1','hostname_ceshi1', 'test01,test02', 'Template01,Template02'),help='添加主机,多个主机组或模板使用分号')
-    parser.add_argument('--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
-    parser.add_argument('-D','--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
-    parser.add_argument('-f',nargs=1,metavar=('switch.file'),dest='switch_file',help='\
-                        eg: "switch1.txt"')
-    parser.add_argument('--table',dest='terminal_table',default="OFF",help='show the terminaltables',action="store_true")
     parser.add_argument('-d',dest='debug_output',default="OFF",help='show the debug info',action="store_true")
-    parser.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
-                        help='export data to xls')
-    parser.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
-                        help="add the xls's title")
-    parser.add_argument('--zero',dest='zero',default="OFF",help='入库时有0',action="store_true")
-    parser.add_argument('--mysql',dest='mysql_quota',help='mysql使用空间',action="store_true")
-    parser.add_argument('-v','--version', action='version', version='%(prog)s 1.1.1')
     # triggers
     parser.add_argument('--triggers',nargs=1,metavar=('HostID'),dest='triggers_get',help='查询triggers')
 
@@ -2152,6 +2292,10 @@ if __name__ == "__main__":
         if args.action_discovery_add:
             zabbix.action_discovery_create(args.action_discovery_add[0],\
                                            args.action_discovery_add[1]\
+                              )
+        if args.action_autoreg_add:
+            zabbix.action_autoreg_create(args.action_autoreg_add[0],\
+                                        args.action_autoreg_add[1]\
                               )
         ############
         # template
