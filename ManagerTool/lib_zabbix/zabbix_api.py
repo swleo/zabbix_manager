@@ -19,7 +19,7 @@ from colorclass import Color
 from terminaltables import SingleTable
 import my_sort
 import my_compare
-from XLSWriter import XLSWriter
+import XLSWriter
 from BLog import Log
 import argparse
 reload(sys)
