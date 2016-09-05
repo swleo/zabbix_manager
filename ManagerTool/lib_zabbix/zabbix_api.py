@@ -252,22 +252,22 @@ class zabbix_api:
         except URLError as e: 
             print "Error as ", e 
         else: 
-            #print result.read()
             response = json.loads(result.read()) 
+            print response
             result.close() 
             print "添加主机 : \033[42m%s\033[0m \tid :\033[31m%s\033[0m" % (hostip, response['result']['hostids']) 
 
 
-    def host_disable(self,hostip):
+    def host_disable(self,hostname):
         data=json.dumps({
-        "jsonrpc": "2.0",
-        "method": "host.update",
-        "params": {
-        "hostid": self.host_get(hostip),
-        "status": 1
-        },
-        "auth": self.user_login(),
-        "id": 1
+            "jsonrpc": "2.0",
+            "method": "host.update",
+            "params": {
+            "hostid": self.host_get(hostname),
+            "status": 1
+            },
+            "auth": self.user_login(),
+            "id": 1
         })
         request = urllib2.Request(self.url,data)
         for key in self.header:
@@ -280,16 +280,14 @@ class zabbix_api:
             response = json.loads(result.read()) 
             result.close()
             print '----主机现在状态------------'
-        print self.host_get(hostip)
+        print self.host_get(hostname)
                  
-    def host_delete(self,hostid):
+    def host_delete(self,hostnames):
         hostid_list=[]
         #print type(hostid)
-        for i in hostid.split(','):
-            var = {}
-            var['hostid'] = self.host_get(i)
-            hostid_list.append(var)      
-        print hostid_list
+        for i in hostnames.split(','):
+            hostid = self.host_get(i)
+            hostid_list.append(hostid)      
         data=json.dumps({
                 "jsonrpc": "2.0",
                 "method": "host.delete",
@@ -297,7 +295,6 @@ class zabbix_api:
                 "auth": self.user_login(),
                 "id": 1
                 })
-        print data
         request = urllib2.Request(self.url,data) 
         for key in self.header: 
             request.add_header(key, self.header[key]) 
@@ -309,10 +306,9 @@ class zabbix_api:
         else: 
             response = json.loads(result.read()) 
             #print response['result']
-            print response
 
             result.close() 
-            print "主机 \033[041m %s\033[0m  已经删除 !"%hostid 
+            print "主机 \033[041m %s\033[0m  已经删除 !"%hostnames
     # hostgroup
     def hostgroup_get(self, hostgroupName=''): 
         data = json.dumps({ 
@@ -2033,8 +2029,8 @@ if __name__ == "__main__":
                                  'test01,test02', 
                                  'Template01,Template02'),
                         help='添加主机,多个主机组或模板使用分号')
-    parser_host.add_argument('--disable',dest='disablehost',nargs=1,metavar=('192.168.2.1'),help='禁用主机')
-    parser_host.add_argument('--delete',dest='deletehost',nargs='+',metavar=('192.168.2.1'),help='删除主机,多个主机之间用分号')
+    parser_host.add_argument('--disable',dest='disablehost',nargs=1,metavar=('hostname'),help='禁用主机')
+    parser_host.add_argument('--delete',dest='deletehost',nargs=1,metavar=('hostnames'),help='删除主机,多个主机之间用分号')
     
     #####################################
     parser_report = parser.add_argument_group('report')
@@ -2268,7 +2264,7 @@ if __name__ == "__main__":
         if args.hostgroup_add:
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
-            zabbix.host_create(args.addhost[0], args.addhost[1], args.addhost[2])
+            zabbix.host_create(args.addhost[0], args.addhost[1], args.addhost[2],args.addhost[3])
         ############
         # drule
         ############
