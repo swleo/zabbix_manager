@@ -880,7 +880,7 @@ class zabbix_api:
         return 0
     ##
     # @return 
-    def report_flow(self,date_from,date_till,export_xls,hosts_file="./switch"): 
+    def report_flow(self,date_from,date_till,export_xls,hosts_file="./switch",multiple=1): 
         host_all_info = config.read_config(hosts_file)
         #print host_all_info
         dateFormat = "%Y-%m-%d %H:%M:%S"
@@ -966,6 +966,9 @@ class zabbix_api:
             if itemid_in_list:
                 itemid_in=itemid_in_list[0][0]
                 in_min,in_max,in_avg = self.trend_get(itemid_in,time_from,time_till)
+                in_min = in_min * int(multiple)
+                in_max = in_max * int(multiple)
+                in_avg = in_avg * int(multiple)
                 in_min = float('%0.4f'%(in_min /1000000.0))
                 in_max = float('%0.4f'%(in_max /1000000.0))
                 in_avg = float('%0.4f'%(in_avg /1000000.0))
@@ -987,6 +990,9 @@ class zabbix_api:
             if itemid_out_list:
                 itemid_out = itemid_out_list[0][0]
                 out_min,out_max,out_avg = self.trend_get(itemid_out,time_from,time_till)
+                out_min = out_min * int(multiple)
+                out_max = out_max * int(multiple)
+                out_avg = out_avg * int(multiple)
                 out_min = float('%0.4f'%(out_min /1000000.0))
                 out_max = float('%0.4f'%(out_max /1000000.0))
                 out_avg = float('%0.4f'%(out_avg /1000000.0))
@@ -2165,6 +2171,7 @@ if __name__ == "__main__":
     parser_output.add_argument('-f',nargs=1,metavar=('switch.file'),dest='switch_file',help='\
                         eg: "switch1.txt"')
     parser_output.add_argument('--table',dest='terminal_table',default="OFF",help='show the terminaltables',action="store_true")
+    parser_output.add_argument('--multiple',nargs=1,metavar=('multiple'),dest='multiple',default="OFF",help='multiple')
     parser_output.add_argument('--xls',nargs=1,metavar=('xls_name.xls'),dest='xls',\
                         help='export data to xls')
     parser_output.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
@@ -2207,6 +2214,9 @@ if __name__ == "__main__":
                 "hostID":""
                 }
 
+        multiple = 1
+        if args.multiple != "OFF":
+            multiple = args.multiple[0]
         # 导出报表
         if args.xls:
             export_xls["xls"] = 'ON'
@@ -2258,7 +2268,7 @@ if __name__ == "__main__":
         if args.report:
             zabbix.report(args.report[0],args.report[1],args.report[2],export_xls,select_condition)
         if args.report_flow:
-            zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls,hosts_file)
+            zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls,hosts_file,multiple=multiple)
         if args.report_available:
             zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls,select_condition,value_type)
         if args.hostgroup_add:
