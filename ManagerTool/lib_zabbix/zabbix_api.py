@@ -1126,9 +1126,9 @@ class zabbix_api:
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"trend.get", 
-                           "time_from":time_from,
-                           "time_till":time_till,
                            "params":{ 
+                               "time_from":time_from,
+                               "time_till":time_till,
                                "output":[
                                    "itemid",
                                    "clock",
