@@ -37,11 +37,14 @@ def warn_msg(msg):
     print "\033[43;37m[Warning]: %s \033[0m"%msg
 
 class zabbix_api: 
-    def __init__(self,terminal_table,debug=False,output=True): 
+    def __init__(self,terminal_table,debug=False,output=True,output_sort=False): 
         if os.path.exists("zabbix_config.ini"):
             config = ConfigParser.ConfigParser()
             config.read("zabbix_config.ini")
+            # 是否输出显示
             self.output = output
+            # 输出结果第几列排序
+            self.output_sort = int(output_sort)
             self.server = config.get("zabbixserver", "server")
             self.port = config.get("zabbixserver", "port")
             self.user = config.get("zabbixserver", "user")
@@ -609,6 +612,8 @@ class zabbix_api:
     def report(self,itemName,date_from,date_till,export_xls,select_condition): 
         dateFormat = "%Y-%m-%d %H:%M:%S"
         #dateFormat = "%Y-%m-%d"
+        report_output=[]
+        
         try:
             startTime =  time.strptime(date_from,dateFormat)
             endTime =  time.strptime(date_till,dateFormat)
@@ -619,32 +624,16 @@ class zabbix_api:
         except:
             err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
-        if export_xls["xls"] == 'ON':
-            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
-            if export_xls["title"] == 'ON':
-                xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
-            else:
-                xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
-            xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
-            xlswriter.setcol_width([10,50,35,10,10,10],sheet_name=sheetName)
         
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
             err_msg("date_till must after the date_from time")
 
-        if self.terminal_table:
-            table_show=[]
-            table_show.append(["hostid","name","itemName","min","max","avg"])
-        else:
-            print "hostid",'\t',"name",'\t',"itemName",'\t',"min",'\t',"max","avg"
 
         # 获取需要输出报表信息的host_list
         if select_condition["hostgroupID"] or select_condition["hostID"]:
-            if export_xls["xls"] == 'ON':
-                output_info = self._get_select_condition_info(select_condition)
-                xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
-                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern_n=22)
+            xls_range = self._get_select_condition_info(select_condition)
                 
             host_list_g=[]
             host_list_h=[]
@@ -658,10 +647,7 @@ class zabbix_api:
             # 去除列表中重复的元素
             host_list = list(set(host_list_g))
         else:
-            if export_xls["xls"] == 'ON':
-                output_info = u"ALL"
-                xlswriter.add_remark(u"范围:"+output_info,6,sheet_name=sheetName)
-                xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern_n=22)
+            xls_range = u"ALL"
             host_list = self._host_get()
         for host_info in host_list: 
             itemid_all_list = self.item_get(host_info[0],itemName)
@@ -674,7 +660,6 @@ class zabbix_api:
                 history_type = itemid_sub_list[4]
                 debug_msg="itemid:%s"%itemid
                 self.logger.debug(debug_msg)
-                
                 report_min,report_max,report_avg = self.trend_get(itemid,time_from,time_till)
                 if history_type=="3":
                     report_min=int(report_min)
@@ -684,18 +669,48 @@ class zabbix_api:
                 report_max=str(report_max)
                 report_avg=str(report_avg)
                 itemid=str(itemid)
-                if self.terminal_table:
-                    table_show.append([host_info[0],host_info[2],item_name,report_min,report_max,report_avg])
+                report_output.append([host_info[0],host_info[2],item_name,report_min,report_max,report_avg])
+        if self.output_sort:
+            if self.output_sort in [4,5,6]:
+                if history_type=="3":
+                    report_output = sorted(report_output,key=lambda x:int(x[self.output_sort-1]),reverse=True)
                 else:
-                    print host_info[0],'\t',host_info[2],'\t',itemid,item_name,'\t',report_min,'\t',report_max,'\t',report_avg
-                if export_xls["xls"] == "ON":
-                    xlswriter.writerow([host_info[0],host_info[2],item_name,report_min,report_max,report_avg],sheet_name=sheetName,border=True)
-        print
+                    report_output = sorted(report_output,key=lambda x:float(x[self.output_sort-1]),reverse=True)
+            if self.output_sort in [1]:
+                report_output = sorted(report_output,key=lambda x:int(x[self.output_sort-1]),reverse=True)
+        ################################################################output
         if self.terminal_table:
+            table_show=[]
+            table_show.append(["hostid","name","itemName","min","max","avg"])
+            for report_item in report_output:
+                table_show.append(report_item)
             table=SingleTable(table_show)
             table.title = itemName
             print(table.table)
-        if export_xls["xls"] == 'ON':
+        else:
+            print "hostid",'\t',"name",'\t',"itemName",'\t',"min",'\t',"max","avg"
+            for report_item in report_output:
+                for report_item_i in report_item:
+                    print report_item_i,'\t',
+                print 
+        if export_xls["xls"] == "ON":
+            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
+            # title
+            if export_xls["title"] == 'ON':
+                xlswriter.add_image("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
+            else:
+                xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+            # 报告周期
+            xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
+            xlswriter.setcol_width([10,50,35,10,10,10],sheet_name=sheetName)
+            
+            ## 范围
+            xlswriter.add_remark(u"范围:"+xls_range,6,sheet_name=sheetName)
+            xlswriter.writerow(["hostid","name","itemName","min","max","avg"],sheet_name=sheetName,border=True,pattern_n=22)
+            
+            ## 输出内容
+            for report_item in report_output:
+                xlswriter.writerow(report_item,sheet_name=sheetName,border=True)
             xlswriter.save()
         return 0
     def agent_ping(self,item_ID='',time_from='',time_till=''): 
@@ -2180,21 +2195,35 @@ if __name__ == "__main__":
     parser.add_argument('-d',dest='debug_output',default="OFF",help='show the debug info',action="store_true")
     # triggers
     parser.add_argument('--triggers',nargs=1,metavar=('HostID'),dest='triggers_get',help='查询triggers')
+    parser.add_argument('--sort',nargs=1,metavar=('num'),dest='output_sort',default="OFF",help='设置第几列进行排序')
 
     if len(sys.argv)==1:
         print parser.print_help()
     else:
         args=parser.parse_args()
+        
+        # 默认为普通输出格式
         terminal_table = False
         if args.terminal_table != "OFF":
             terminal_table = True
+        
+        # 默认不输出debug信息
         debug = False
         if args.debug_output != "OFF":
             debug = True
+        
+        # 值默认为入库值
         value_type = False
         if args.zero != "OFF":
             value_type = True
-        zabbix=zabbix_api(terminal_table,debug)
+        
+        # 输出结果默认不排序
+        output_sort=False
+        if args.output_sort != "OFF":
+            output_sort = args.output_sort[0]
+
+
+        zabbix=zabbix_api(terminal_table,debug,output_sort=output_sort)
         if args.mysql_quota:
             zabbix.mysql_quota()
         export_xls = {"xls":"OFF",
