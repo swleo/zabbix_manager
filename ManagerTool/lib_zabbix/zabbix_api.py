@@ -671,13 +671,14 @@ class zabbix_api:
                 itemid=str(itemid)
                 report_output.append([host_info[0],host_info[2],item_name,report_min,report_max,report_avg])
         if self.output_sort:
+            reverse=False
             if self.output_sort in [4,5,6]:
                 if history_type=="3":
-                    report_output = sorted(report_output,key=lambda x:int(x[self.output_sort-1]),reverse=True)
+                    report_output = sorted(report_output,key=lambda x:int(x[self.output_sort-1]),reverse=reverse)
                 else:
-                    report_output = sorted(report_output,key=lambda x:float(x[self.output_sort-1]),reverse=True)
+                    report_output = sorted(report_output,key=lambda x:float(x[self.output_sort-1]),reverse=reverse)
             if self.output_sort in [1]:
-                report_output = sorted(report_output,key=lambda x:int(x[self.output_sort-1]),reverse=True)
+                report_output = sorted(report_output,key=lambda x:int(x[self.output_sort-1]),reverse=reverse)
         ################################################################output
         if self.terminal_table:
             table_show=[]
