@@ -151,6 +151,8 @@ password = zabbix
 <h2 name="3">3 version</h2>
 <h2 name="3">3 版本发布</h2>
 ----
+* v1.1.3，2016-09-09 add report_available2,排序可设置
+* v1.1.2，2016-09-05 add zabbix_manager gui
 * v1.1.1，2016-08-22 新增：预估mysql存储大小
 * v1.1.0，2016-07-14 release 1.1.0
 * v1.0.8，2016-07-13 新增：导出报表

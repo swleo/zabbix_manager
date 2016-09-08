@@ -18,7 +18,7 @@ report 包括以下内容
 
 ## 2 报表
 
-### 2.1 服务器可用性报表
+### 2.1 服务器可用性报表1
 
 输出显示时加--table可以表框显示
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_available_table.jpg)
@@ -27,7 +27,36 @@ report 包括以下内容
 
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_available_xls.jpg)
 
-### 2.2 服务器日常使用报表 
+### 2.2 服务器可用性报表2
+
+```
+#python zabbix_api.py  --report_available2 "2016-07-01 00:00:00" "2016-09-01 00:00:00" --hostid 10105 --table
+```
+程序输出
+
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_available_table2.jpg)
+
+zabbix界面上显示
+
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_available_table3.jpg)
+
+输出显示时加--xls ceshi.xls可以导出excel文件，如下
+
+### 2.3 服务器日常使用报表 
+
+```
+直接输出
+#python zabbix_api.py --report item_name date_from date_till
+
+以表格形式展示在终端输出
+#python zabbix_api.py --report item_name date_from date_till --table
+
+以表格形式展示在终端输出,同时将第六列升序输出
+#python zabbix_api.py --report item_name date_from date_till --table --sort 6
+
+以表格形式展示在终端输出,同时将第六列降序输出
+#python zabbix_api.py --report item_name date_from date_till --table --sort 6 --desc
+```
 
 输出显示时加--table可以表框显示
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/report_table.jpg)

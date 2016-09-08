@@ -1,6 +1,6 @@
 #!/usr/bin/python 
 #coding:utf-8 
-__version__ = "1.1.2"
+__version__ = "1.1.3"
  
 import json 
 import urllib2 
@@ -37,7 +37,7 @@ def warn_msg(msg):
     print "\033[43;37m[Warning]: %s \033[0m"%msg
 
 class zabbix_api: 
-    def __init__(self,terminal_table,debug=False,output=True,output_sort=False): 
+    def __init__(self,terminal_table,debug=False,output=True,output_sort=False,sort_reverse=False): 
         if os.path.exists("zabbix_config.ini"):
             config = ConfigParser.ConfigParser()
             config.read("zabbix_config.ini")
@@ -45,6 +45,7 @@ class zabbix_api:
             self.output = output
             # 输出结果第几列排序
             self.output_sort = int(output_sort)
+            self.reverse = sort_reverse
             self.server = config.get("zabbixserver", "server")
             self.port = config.get("zabbixserver", "port")
             self.user = config.get("zabbixserver", "user")
@@ -671,7 +672,9 @@ class zabbix_api:
                 itemid=str(itemid)
                 report_output.append([host_info[0],host_info[2],item_name,report_min,report_max,report_avg])
         if self.output_sort:
-            reverse=False
+            # 排序，如果是false，是升序
+            # 如果是true，是降序
+            reverse = self.reverse
             if self.output_sort in [4,5,6]:
                 if history_type=="3":
                     report_output = sorted(report_output,key=lambda x:int(x[self.output_sort-1]),reverse=reverse)
@@ -892,6 +895,102 @@ class zabbix_api:
             table.title = itemName
             print(table.table)
         if export_xls["xls"] == 'ON':
+            xlswriter.save()
+        return 0
+    ##
+    # @return 
+    def report_available2(self,date_from,date_till,export_xls,select_condition,value_type=False): 
+        dateFormat = "%Y-%m-%d %H:%M:%S"
+        #dateFormat = "%Y-%m-%d"
+        report_output=[]
+        
+        try:
+            startTime =  time.strptime(date_from,dateFormat)
+            endTime =  time.strptime(date_till,dateFormat)
+            sheetName =  time.strftime('%Y%m%d',startTime) + "_TO_" +time.strftime('%Y%m%d',endTime)
+            title_table =  date_from + "~" + date_till
+        except:
+            err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
+
+        time_from = int(time.mktime(startTime))+1
+        time_till = int(time.mktime(endTime))-1
+        diff_hour = self._diff_hour(time_from,time_till)
+
+        if time_from > time_till:
+            err_msg("date_till must after the date_from time")
+
+        # 获取需要输出报表信息的host_list
+        if select_condition["hostgroupID"] or select_condition["hostID"]:
+            xls_range = self._get_select_condition_info(select_condition)
+                
+            host_list_g=[]
+            host_list_h=[]
+            if select_condition["hostgroupID"]:
+                host_list_g=self._host_get(hostgroupID=select_condition["hostgroupID"])
+            if select_condition["hostID"]:
+                host_list_h=self._host_get(hostID=select_condition["hostID"])
+            # 将host_list_h的全部元素添加到host_list_g的尾部
+            host_list_g.extend(host_list_h)
+
+            # 去除列表中重复的元素
+            host_list = list(set(host_list_g))
+        else:
+            xls_range = u"ALL"
+            host_list = self._host_get()
+        for host_info in host_list: 
+            #print "####",host_info[0]
+            triggerid_all_list = self.triggers_get(host_info[0])
+            if triggerid_all_list == 0:
+                continue
+            #print time_from,time_till
+            for triggerid_sub_list in triggerid_all_list:
+                triggerid=triggerid_sub_list[0]
+                trigger_name=triggerid_sub_list[1]
+                event_result = self.event_get(triggerid,time_from,time_till,value="1")
+                if not event_result:
+                    report_output.append([trigger_name,"0","100%"])
+                else:
+                    event_result = self.event_get(triggerid,time_from,time_till)
+                    if not event_result:
+                        report_output.append([trigger_name,"0","100%"])
+                    else:
+                        event_result = float(event_result)
+                        event_diff = "%0.4f%%"%event_result
+                        event_value = "%0.4f%%"%(100.0 - event_result)
+                        report_output.append([trigger_name,event_diff,event_value])
+        ################################################################output
+        if self.terminal_table:
+            table_show=[]
+            table_show.append(["Name","Problems","OK"])
+            for report_item in report_output:
+                table_show.append(report_item)
+            table=SingleTable(table_show)
+            table.title = "Availability report"
+            print(table.table)
+        else:
+            print "Name",'\t',"Problems",'\t',"OK"
+            for report_item in report_output:
+                for report_item_i in report_item:
+                    print report_item_i,'\t',
+                print 
+        if export_xls["xls"] == "ON":
+            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
+            # title
+            if export_xls["title"] == 'ON':
+                xlswriter.add_image("python.bmg",0,0,3,title_name=export_xls["title_name"],sheet_name=sheetName)
+            else:
+                xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
+            # 报告周期
+            xlswriter.add_header(u"报告周期:"+title_table,3,sheet_name=sheetName)
+            xlswriter.setcol_width([50,10,10],sheet_name=sheetName)
+            
+            ## 范围
+            xlswriter.add_remark(u"范围:"+xls_range,3,sheet_name=sheetName)
+            xlswriter.writerow(["name","Problems","OK"],sheet_name=sheetName,border=True,pattern_n=22)
+            
+            ## 输出内容
+            for report_item in report_output:
+                xlswriter.writerow(report_item,sheet_name=sheetName,border=True)
             xlswriter.save()
         return 0
     ##
@@ -1991,13 +2090,17 @@ class zabbix_api:
             print "ERR- host_ID is null"
             return 0
 
+        all_trigger_list=[]
         data = json.dumps({ 
                            "jsonrpc":"2.0", 
                            "method":"trigger.get", 
                            "params":{ 
                                      "output":"extend",
                                      "hostids":host_ID,
+                                     "expandData":"1",
+                                     "expandDescription":"1"
                                      }, 
+                               #"selectHosts":host_ID,
                            "auth":self.user_login(), 
                            "id":1, 
                            }) 
@@ -2016,7 +2119,89 @@ class zabbix_api:
             if len(response['result']) == 0:
                 return 0
             for trigger in response['result']:
-                print trigger
+                all_trigger_list.append((trigger["triggerid"],trigger["description"]))
+            return all_trigger_list
+    
+    def event_get(self, triggerid='',time_from='',time_till='',value="",show=True): 
+        if value:
+            data = json.dumps({ 
+                               "jsonrpc":"2.0", 
+                               "method":"event.get", 
+                               "params":{ 
+                                         "output":"extend",
+                                         "objectids": triggerid,
+                                         "time_from":time_from,
+                                         "time_till":time_till,
+                                         "value":"1",
+                                         }, 
+                               "auth":self.user_login(), 
+                               "id":1, 
+                               }) 
+        else:
+            data = json.dumps({ 
+                               "jsonrpc":"2.0", 
+                               "method":"event.get", 
+                               "params":{ 
+                                         "output":"extend",
+                                         "objectids": triggerid,
+                                         "time_from":time_from,
+                                         "time_till":time_till,
+                                         }, 
+                               "auth":self.user_login(), 
+                               "id":1, 
+                               }) 
+         
+        request = urllib2.Request(self.url,data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            response = json.loads(result.read()) 
+            result.close() 
+            # 如果输出值为0时，可用性为100%
+            if len(response['result']) == 0:
+                return 0
+            
+            # 当输出的value 包含0值时
+            if not value:
+                # 当输出只有1个值时，可用性为100%
+                if len(response['result']) == 1:
+                    return 0
+                # 输出的列表第一个值为0,表示添加此监控项的时间在时间条件之间，应根据添加监控项的时间为起始时间
+                if response['result'][0]["value"] == "0":
+                    time_from_record = int(response['result'][0]["clock"])
+                    response["result"]=response["result"][1:]
+                    time_range = time_till - time_from_record
+                    time_event_sum = 0
+                    time_diff = 0
+                    #print "debug####",len(response["result"])
+                    for i in range(len(response["result"])):
+                        if(i%2) == 0:
+                            time_diff = int(response["result"][i+1]["clock"]) - int(response["result"][i]["clock"])
+                            time_event_sum = time_event_sum + time_diff
+                    event_diff = float('%0.4f'%(time_event_sum * 100 / float(time_range)))
+                    #print event_diff
+                    return event_diff
+                else:
+                    time_from_record = time_from
+                    time_range = time_till - time_from_record
+                    time_event_sum = 0
+                    time_diff = 0
+                    if len(response["result"])%2 == 1:
+                           return 0
+                    for i in range(len(response["result"])):
+                        if(i%2) == 0:
+                            time_diff = int(response["result"][i+1]["clock"]) - int(response["result"][i]["clock"])
+                            time_event_sum = time_event_sum + time_diff
+                    event_diff = float('%0.4f'%(time_event_sum * 100 / float(time_range)))
+                    return event_diff
+            else:
+                # 表示包含值为1的事件
+                return 1
 
 
 
@@ -2060,6 +2245,11 @@ if __name__ == "__main__":
                         metavar=('itemName','date_from','date_till'),
                         dest='report_available',
                         help='eg:"ping" "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
+    parser_report.add_argument('--report_available2',
+                        nargs=2,
+                        metavar=('date_from','date_till'),
+                        dest='report_available2',
+                        help='eg:"2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser_report.add_argument('--report_flow',
                         nargs=2,
                         metavar=('date_from','date_till'),
@@ -2185,6 +2375,9 @@ if __name__ == "__main__":
                         help='export data to xls')
     parser_output.add_argument('--title',nargs=1,metavar=('title_name'),dest='title',\
                         help="add the xls's title")
+    parser_output.add_argument('--sort',nargs=1,metavar=('num'),dest='output_sort',default="OFF",help='设置第几列进行排序')
+    parser_output.add_argument('--desc',dest='sort_reverse',default="OFF",help='排序设置为降序',action="store_true")
+    
     parser.add_argument('--mysql',dest='mysql_quota',help='mysql使用空间',action="store_true")
     parser.add_argument('-v', action='version', version=__version__)
     parser.add_argument('--item',nargs='+',metavar=('HostID','item_name'),dest='listitem',help='查询item')
@@ -2195,8 +2388,7 @@ if __name__ == "__main__":
                         help='eg:23298 "2016-06-03 00:00:00" "2016-06-10 00:00:00"')
     parser.add_argument('-d',dest='debug_output',default="OFF",help='show the debug info',action="store_true")
     # triggers
-    parser.add_argument('--triggers',nargs=1,metavar=('HostID'),dest='triggers_get',help='查询triggers')
-    parser.add_argument('--sort',nargs=1,metavar=('num'),dest='output_sort',default="OFF",help='设置第几列进行排序')
+    #parser.add_argument('--triggers',nargs=1,metavar=('HostID'),dest='triggers_get',help='查询triggers')
 
     if len(sys.argv)==1:
         print parser.print_help()
@@ -2222,9 +2414,14 @@ if __name__ == "__main__":
         output_sort=False
         if args.output_sort != "OFF":
             output_sort = args.output_sort[0]
+        
+        # 默认排序方式为升序
+        sort_reverse = False
+        if args.sort_reverse != "OFF":
+            sort_reverse = True
 
 
-        zabbix=zabbix_api(terminal_table,debug,output_sort=output_sort)
+        zabbix=zabbix_api(terminal_table,debug,output_sort=output_sort,sort_reverse=sort_reverse)
         if args.mysql_quota:
             zabbix.mysql_quota()
         export_xls = {"xls":"OFF",
@@ -2291,6 +2488,8 @@ if __name__ == "__main__":
             zabbix.report_flow(args.report_flow[0],args.report_flow[1],export_xls,hosts_file)
         if args.report_available:
             zabbix.report_available(args.report_available[0],args.report_available[1],args.report_available[2],export_xls,select_condition,value_type)
+        if args.report_available2:
+            zabbix.report_available2(args.report_available2[0],args.report_available2[1],export_xls,select_condition,value_type)
         if args.hostgroup_add:
             zabbix.hostgroup_create(args.hostgroup_add[0])
         if args.addhost:
@@ -2374,5 +2573,5 @@ if __name__ == "__main__":
         ############
         # triggers
         ############
-        if args.triggers_get:
-            zabbix.triggers_get(args.triggers_get[0])
+        #if args.triggers_get:
+        #    zabbix.triggers_get(args.triggers_get[0])
