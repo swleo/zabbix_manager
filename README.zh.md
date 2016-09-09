@@ -162,6 +162,12 @@ password = zabbix
 * v1.0.2，2016-06-03 新增：新增交互模式
 * v1.0.1，2016-04-16 新增：初次编写
 
+## 小额捐款
+
+如果你觉得zabbix_manager对你有帮助, 可以对作者进行小额捐款(支付宝)
+
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/5.jpg)![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/10.jpg)
+
 ## 致谢
 
 1. 感谢南非蜘蛛的指导
