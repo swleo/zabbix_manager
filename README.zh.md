@@ -166,7 +166,7 @@ password = zabbix
 
 如果你觉得zabbix_manager对你有帮助, 可以对作者进行小额捐款(支付宝)
 
-![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/5.jpg)![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/10.jpg)
+![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/5.jpg)
 
 ## 致谢
 
