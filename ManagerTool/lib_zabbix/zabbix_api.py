@@ -939,6 +939,7 @@ class zabbix_api:
             host_list = self._host_get()
         for host_info in host_list: 
             #print "####",host_info[0]
+            hostname = host_info[1]
             triggerid_all_list = self.triggers_get(host_info[0])
             if triggerid_all_list == 0:
                 continue
@@ -948,27 +949,27 @@ class zabbix_api:
                 trigger_name=triggerid_sub_list[1]
                 event_result = self.event_get(triggerid,time_from,time_till,value="1")
                 if not event_result:
-                    report_output.append([trigger_name,"0","100%"])
+                    report_output.append([hostname,trigger_name,"0","100%"])
                 else:
                     event_result = self.event_get(triggerid,time_from,time_till)
                     if not event_result:
-                        report_output.append([trigger_name,"0","100%"])
+                        report_output.append([hostname,trigger_name,"0","100%"])
                     else:
                         event_result = float(event_result)
                         event_diff = "%0.4f%%"%event_result
                         event_value = "%0.4f%%"%(100.0 - event_result)
-                        report_output.append([trigger_name,event_diff,event_value])
+                        report_output.append([hostname,trigger_name,event_diff,event_value])
         ################################################################output
         if self.terminal_table:
             table_show=[]
-            table_show.append(["Name","Problems","OK"])
+            table_show.append(["hostname","Name","Problems","OK"])
             for report_item in report_output:
                 table_show.append(report_item)
             table=SingleTable(table_show)
             table.title = "Availability report"
             print(table.table)
         else:
-            print "Name",'\t',"Problems",'\t',"OK"
+            print "hostname",'\t',"Name",'\t',"Problems",'\t',"OK"
             for report_item in report_output:
                 for report_item_i in report_item:
                     print report_item_i,'\t',
@@ -977,16 +978,16 @@ class zabbix_api:
             xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
             # title
             if export_xls["title"] == 'ON':
-                xlswriter.add_image("python.bmg",0,0,3,title_name=export_xls["title_name"],sheet_name=sheetName)
+                xlswriter.add_image("python.bmg",0,0,4,title_name=export_xls["title_name"],sheet_name=sheetName)
             else:
                 xlswriter.add_image("python.bmg",0,0,sheet_name=sheetName)
             # 报告周期
-            xlswriter.add_header(u"报告周期:"+title_table,3,sheet_name=sheetName)
-            xlswriter.setcol_width([50,10,10],sheet_name=sheetName)
+            xlswriter.add_header(u"报告周期:"+title_table,4,sheet_name=sheetName)
+            xlswriter.setcol_width([15,50,10,10],sheet_name=sheetName)
             
             ## 范围
-            xlswriter.add_remark(u"范围:"+xls_range,3,sheet_name=sheetName)
-            xlswriter.writerow(["name","Problems","OK"],sheet_name=sheetName,border=True,pattern_n=22)
+            xlswriter.add_remark(u"范围:"+xls_range,4,sheet_name=sheetName)
+            xlswriter.writerow(["hostname","name","Problems","OK"],sheet_name=sheetName,border=True,pattern_n=22)
             
             ## 输出内容
             for report_item in report_output:
