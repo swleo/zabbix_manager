@@ -58,6 +58,9 @@ Daily we need to export the report, use zabbix manager can export xls file using
 
 Configure zabbix_manager
 First you should configure zabbix_config.ini to works with appropriate zabbix server and use right credentials.
+
+ManagerTool/lib_zabbix/zabbix_config.ini
+
 ```bash
 $ cat zabbix_config.ini
 
@@ -91,7 +94,7 @@ password = zabbix
 <h3 name="2.1">2.1 hostgroups management</h3>
 (1)list hostgroups
 ```bash
-#python -G
+#python zabbix_api.py --group
 
 ```
 (2)add a hostgroup
@@ -103,7 +106,7 @@ password = zabbix
 <h3 name="2.2">2.2 usergroups management</h3>
 (1)list usergroups
 ```bash
-#python --usergroup
+#python zabbix_api.py --usergroup
 ```
 (2)add a usergroup
 ```bash
@@ -113,13 +116,13 @@ password = zabbix
 <h3 name="2.3">2.3 hosts management</h3>
 (1)list hosts
 ```bash
-#python -H --table
+#python zabbix_api.py --host --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_list.jpg)
 <h3 name="2.4">2.4 mediatype management</h3>
 (1)list mediatype
 ```bash
-#python --mediatype --table
+#python zabbix_api.py --mediatype --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_list.jpg)
 

@@ -12,7 +12,9 @@ import time
 import unicodedata
 import config
 
-root_path = os.path.dirname(__file__)
+root_path = os.path.split(os.path.realpath(__file__))[0]
+os.chdir(root_path)
+zabbix_config = '%s/zabbix_config.ini'%root_path
 sys.path.insert(0, os.path.join(root_path, 'w_lib'))
 
 from colorclass import Color
@@ -38,7 +40,7 @@ def warn_msg(msg):
 
 class zabbix_api: 
     def __init__(self,terminal_table,debug=False,output=True,output_sort=False,sort_reverse=False): 
-        if os.path.exists("zabbix_config.ini"):
+        if os.path.exists(zabbix_config):
             config = ConfigParser.ConfigParser()
             config.read("zabbix_config.ini")
             # 是否输出显示

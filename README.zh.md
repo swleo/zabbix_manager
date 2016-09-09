@@ -105,7 +105,7 @@ password = zabbix
 <h3 name="2.1">2.1 hostgroups 管理</h3>
 (1)list hostgroups
 ```bash
-#python -G
+#python zabbix_api.py --group
 
 ```
 (2)add a hostgroup
@@ -117,7 +117,7 @@ password = zabbix
 <h3 name="2.2">2.2 usergroups 管理</h3>
 (1)list usergroups
 ```bash
-#python --usergroup
+#python zabbix_api.py --usergroup
 ```
 (2)add a usergroup
 ```bash
@@ -127,13 +127,13 @@ password = zabbix
 <h3 name="2.3">2.3 host 管理</h3>
 (1)list hosts
 ```bash
-#python -H --table
+#python zabbix_api.py --host --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/host_list.jpg)
 <h3 name="2.4">2.4 mediatype 管理</h3>
 (1)list mediatype
 ```bash
-#python --mediatype --table
+#python zabbix_api.py --mediatype --table
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_list.jpg)
 
