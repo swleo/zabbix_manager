@@ -1,7 +1,7 @@
 # agent自动加入监控
-<h2 name="1.3">1 zabbix自动发现配置</h2>
+## 1 zabbix自动发现配置
 
-<h3>(1)修改配置文件zabbix_config.ini</h3>
+### (1)修改配置文件zabbix_config.ini
 
 第一步是修改配置文件zabbix_config.ini 
 
@@ -21,7 +21,7 @@ python ./lib_zabbix/zabbix_api.py  --drule_add "agent discovery" "192.168.199.1-
 info_echo "create action_discovery"
 python ./lib_zabbix/zabbix_api.py  --action_discovery_add "Auto discovery" store
 ``` 
-<h3>(2)创建自动发现规则</h3>
+### (2)创建自动发现规则
 
 自动发现规则是zabbix server去扫描一个网段，把在线的主机添加到Host列表中。适合内网下
 
@@ -36,7 +36,8 @@ sh scripts/config/config.sh
 
 (2)自动创建action，根据action，自动将discovery的机器加到特定的主机群组中，同时链接上linux模板
 
-<h2>2 zabbix客户端自动注册</h2>
+## 2 zabbix客户端自动注册(推荐)
+
 这次是Active agent主动联系zabbix server，最后由zabbix server将这些agent加到host里。对于需要部署特别多服务器的人来说，这功能相当给力。
 
 (1)agent
@@ -54,3 +55,7 @@ HostMetadataItem=system.uname
 * Action选项卡-----------定义Action名称：Action_for_autoreg
 * Conditions选项卡------添加:Host metadata like Linux
 * Operations选项卡-----添加:Add host,Add to host group ,Link to template
+
+直接执行python main.py即可
+
+执行后需要输入action_name和hostgroup_name

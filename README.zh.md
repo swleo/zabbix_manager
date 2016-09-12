@@ -1,13 +1,3 @@
-# zabbix_manager
-## 语言选择
-
-[中文](https://github.com/BillWang139967/zabbix_manager/blob/master/README.zh.md)
-[English](https://github.com/BillWang139967/zabbix_manager/blob/master/README.md)
-
-## 支持版本
-> * zabbix2.4
-> * zabbix3.0
-
 ## 【目录】
 ----
 
@@ -148,26 +138,3 @@ password = zabbix
 # python zabbix_api.py --mediatype_del mediaName
 ```
 ![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/mediatype_del.jpg)
-<h2 name="3">3 version</h2>
-<h2 name="3">3 版本发布</h2>
-----
-* v1.1.3，2016-09-09 add report_available2,排序可设置
-* v1.1.2，2016-09-05 add zabbix_manager gui
-* v1.1.1，2016-08-22 新增：预估mysql存储大小
-* v1.1.0，2016-07-14 release 1.1.0
-* v1.0.8，2016-07-13 新增：导出报表
-* v1.0.5，2016-06-19 新增：新增报警媒介类型管理
-* v1.0.4，2016-06-18 新增：新增用户组和用户管理
-* v1.0.3，2016-06-11 新增：可以方便的直接导出报表
-* v1.0.2，2016-06-03 新增：新增交互模式
-* v1.0.1，2016-04-16 新增：初次编写
-
-## 小额捐款
-
-如果你觉得zabbix_manager对你有帮助, 可以对作者进行小额捐款(支付宝)
-
-![Screenshot](https://github.com/BillWang139967/zabbix_manager/raw/master/images/5.jpg)
-
-## 致谢
-
-1. 感谢南非蜘蛛的指导

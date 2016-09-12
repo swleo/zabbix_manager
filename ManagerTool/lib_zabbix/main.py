@@ -18,9 +18,9 @@ import os
 from zabbix_api import zabbix_api
 
 # Set Working Directory
-abspath = os.path.realpath(__file__)
-dname = os.path.dirname(abspath)
-os.chdir(dname)
+root_path = os.path.split(os.path.realpath(__file__))[0]
+print root_path
+os.chdir(root_path)
 
 
 # Get console size to help with formatting

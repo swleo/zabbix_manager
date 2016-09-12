@@ -1017,6 +1017,7 @@ class zabbix_api:
         host_all_info = config.read_config(hosts_file)
         #print host_all_info
         dateFormat = "%Y-%m-%d %H:%M:%S"
+        report_output=[]
         try:
             startTime =  time.strptime(date_from,dateFormat)
             endTime =  time.strptime(date_till,dateFormat)
@@ -1027,40 +1028,11 @@ class zabbix_api:
         except:
             err_msg("时间格式 ['2016-05-01 00:00:00'] ['2016-06-01 00:00:00']")
 
-        if export_xls["xls"] == 'ON':
-            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
-            if export_xls["title"] == 'ON':
-                xlswriter.add_image2("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
-            else:
-                xlswriter.add_image2("python.bmg",0,0,sheet_name=sheetName)
-            xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
-            xlswriter.setcol_width([5,58,20,20,8,8,8,8,8,8,8,8,8,8,8,8,8,11],sheet_name=sheetName)
-            xlswriter.write_title(sheet_name=sheetName,border=True,pattern_n=22)
-
         time_from = int(time.mktime(startTime))+1
         time_till = int(time.mktime(endTime))
         if time_from > time_till:
             err_msg("date_till must after the date_from time")
 
-        print \
-            "nu",\
-            "description",\
-            "hostname|",\
-            "ethernet_port|",\
-            "speed",\
-            "in_max|",\
-            "in_avg|",\
-            "in_min|",\
-            "rate_in_max|",\
-            'rate_in_avg|',\
-            "rate_in_min|",\
-            "out_max|",\
-            "out_avg|",\
-            "out_min",\
-            "rate_out_max|",\
-            "rate_out_avg|",\
-            "rate_out_min|",\
-            "bandwidth"
         # 获取需要输出报表信息的host_list
         num=1
         for host_info in host_all_info: 
@@ -1093,7 +1065,6 @@ class zabbix_api:
                         speed_flag = True
                 else:
                     speed = -1
-                
             # ethernet_port
             itemid_in_list = self.item_get(hostid,item_ethernet_port_in)
             if itemid_in_list:
@@ -1114,8 +1085,6 @@ class zabbix_api:
                 rate_in_min = -1
                 rate_in_max = -1
                 rate_in_avg = -1
-
-
             itemid_out_list = self.item_get(hostid,item_ethernet_port_out)
             if itemid_out_list:
                 itemid_out = itemid_out_list[0][0]
@@ -1134,82 +1103,116 @@ class zabbix_api:
                 rate_out_min = -1
                 rate_out_max = -1
                 rate_out_avg = -1
-
             if rate_in_max > rate_out_max:
                 bandwidth = rate_in_max
             else:
                 bandwidth =rate_out_max
 
-            print \
-                num,\
-                description,\
-                host_name,\
-                ethernet_port,\
-                speed,\
-                in_max,\
-                in_avg,\
-                in_min,\
-                rate_in_max,\
-                rate_in_avg,\
-                rate_in_min,\
-                out_max,\
-                out_avg,\
-                out_min,\
-                rate_out_max,\
-                rate_out_avg,\
-                rate_out_min,\
-                bandwidth
-            if export_xls["xls"] == "ON":
-                if speed_flag:
-                    xlswriter.writerow([
-                        num,\
-                        description,\
-                        host_name,\
-                        ethernet_port,\
-                        speed,\
-                        in_max,\
-                        in_avg,\
-                        in_min,\
-                        rate_in_max,\
-                        rate_in_avg,\
-                        rate_in_min,\
-                        out_max,\
-                        out_avg,\
-                        out_min,\
-                        rate_out_max,\
-                        rate_out_avg,\
-                        rate_out_min,\
-                        bandwidth],
-                        sheet_name=sheetName,border=True,pattern_n=2)
-                else:
-                    xlswriter.writerow([
-                        num,\
-                        description,\
-                        host_name,\
-                        ethernet_port,\
-                        speed,\
-                        in_max,\
-                        in_avg,\
-                        in_min,\
-                        rate_in_max,\
-                        rate_in_avg,\
-                        rate_in_min,\
-                        out_max,\
-                        out_avg,\
-                        out_min,\
-                        rate_out_max,\
-                        rate_out_avg,\
-                        rate_out_min,\
-                        bandwidth],
-                        sheet_name=sheetName,border=True)
-                num=num+1
+            if speed_flag:
+                report_output.append([
+                    num,\
+                    description,\
+                    host_name,\
+                    ethernet_port,\
+                    speed,\
+                    in_max,\
+                    in_avg,\
+                    in_min,\
+                    rate_in_max,\
+                    rate_in_avg,\
+                    rate_in_min,\
+                    out_max,\
+                    out_avg,\
+                    out_min,\
+                    rate_out_max,\
+                    rate_out_avg,\
+                    rate_out_min,\
+                    bandwidth,\
+                    1])
+            else:
+                report_output.append([
+                    num,\
+                    description,\
+                    host_name,\
+                    ethernet_port,\
+                    speed,\
+                    in_max,\
+                    in_avg,\
+                    in_min,\
+                    rate_in_max,\
+                    rate_in_avg,\
+                    rate_in_min,\
+                    out_max,\
+                    out_avg,\
+                    out_min,\
+                    rate_out_max,\
+                    rate_out_avg,\
+                    rate_out_min,\
+                    bandwidth,\
+                    0])
+            num=num+1
                     
-        print
-        if self.terminal_table:
-            table=SingleTable(table_show)
-            table.title = itemName
-            print(table.table)
-        if export_xls["xls"] == 'ON':
+        if self.output_sort:
+            # 排序，如果是false，是升序
+            # 如果是true，是降序
+            if self.output_sort in range(5,19):
+                reverse = self.reverse
+                report_output = sorted(report_output,key=lambda x:float(x[self.output_sort-1]),reverse=reverse)
+            else:
+                print "Does not support this column sorting"
+        ################################################################output
+        #if self.terminal_table:
+        #    table_show=[]
+        #    table_show.append([u"hostid",u"资源类型",u"itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"])
+        #    for report_item in report_output:
+        #        table_show.append(report_item)
+        #    table=SingleTable(table_show)
+        #    table.title = itemName
+        #    print(table.table)
+        #else:
+        print \
+            "nu",\
+            "description",\
+            "hostname|",\
+            "ethernet_port|",\
+            "speed",\
+            "in_max|",\
+            "in_avg|",\
+            "in_min|",\
+            "rate_in_max|",\
+            'rate_in_avg|',\
+            "rate_in_min|",\
+            "out_max|",\
+            "out_avg|",\
+            "out_min",\
+            "rate_out_max|",\
+            "rate_out_avg|",\
+            "rate_out_min|",\
+            "bandwidth"
+        for report_item in report_output:
+            for report_item_i in report_item[:-1]:
+                print report_item_i,
+            print 
+        if export_xls["xls"] == "ON":
+            xlswriter = XLSWriter.XLSWriter(export_xls["xls_name"])
+            # title
+            if export_xls["title"] == 'ON':
+                xlswriter.add_image2("python.bmg",0,0,6,title_name=export_xls["title_name"],sheet_name=sheetName)
+            else:
+                xlswriter.add_image2("python.bmg",0,0,sheet_name=sheetName)
+            # 报告周期
+            xlswriter.add_header(u"报告周期:"+title_table,6,sheet_name=sheetName)
+            xlswriter.setcol_width([5,58,20,20,8,8,8,8,8,8,8,8,8,8,8,8,8,11],sheet_name=sheetName)
+            xlswriter.write_title(sheet_name=sheetName,border=True,pattern_n=22)
+            ## 范围
+            #xlswriter.add_remark(u"范围:"+xls_range,6,sheet_name=sheetName)
+            #xlswriter.writerow(["hostid",u"资源类型","itemName",u"期望值(%)",u"平均值(%)",u"差值(%)"],sheet_name=sheetName,border=True,pattern_n=22)
+            ## 输出内容
+            for report_item in report_output:
+                if report_item[-1] == 1:
+                    xlswriter.writerow(report_item[:-1],sheet_name=sheetName,border=True,pattern_n=2)
+                else:
+                    xlswriter.writerow(report_item[:-1],sheet_name=sheetName,border=True)
             xlswriter.save()
         return 0
     def alert_get(self):
@@ -1267,7 +1270,6 @@ class zabbix_api:
                                "itemids":itemID,
                                "limit":"8760"
                                      }, 
-
                            "auth":self.user_login(), 
                            "id":1, 
                            }) 
