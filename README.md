@@ -13,6 +13,8 @@
 > * zabbix安装-------------------------------------------------[zabbix_install](https://github.com/BillWang139967/zabbix_install)
 > * zabbix报警工具---------------------------------------------[zabbix_alert](https://github.com/BillWang139967/zabbix_alert)
 > * zabbix常用模板---------------------------------------------[zabbix_templates](https://github.com/BillWang139967/zabbix_templates)
+> * 导出报表工具-----------------------------------------------[XLSWriter](https://github.com/BillWang139967/XLSWriter)
+> * linux终端表格----------------------------------------------[linux_terminal](https://github.com/BillWang139967/linux_terminal)
 
 **monitor**
 
