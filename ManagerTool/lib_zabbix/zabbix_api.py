@@ -1888,11 +1888,13 @@ class zabbix_api:
             eventsource={"0":"triggers","1":"discovery","2":"registration","3":"internal"}
             for action in response['result']:      
                 if len(actionName)==0:
+                    self.logger.info(str(action))
                     if self.terminal_table:
                         table_show.append([action['actionid'],action['name'],eventsource[action['eventsource']],status[action['status']]])
                     else:
                         print action['actionid'],action['name'],eventsource[action['eventsource']],status[action['status']]
                 else:
+                    self.logger.info(str(action))
                     return action['actionid']
             if self.terminal_table:
                 table=SingleTable(table_show)
@@ -1969,6 +1971,119 @@ class zabbix_api:
                            "auth": self.user_login(), 
                            "id":1                   
         }) 
+        request = urllib2.Request(self.url, data) 
+        for key in self.header: 
+            request.add_header(key, self.header[key]) 
+              
+        try: 
+            result = urllib2.urlopen(request) 
+        except URLError as e: 
+            print "Error as ", e 
+        else: 
+            #print result.read()
+            response = json.loads(result.read()) 
+            result.close() 
+
+            output_print={}
+            output_print["status"]="OK"
+            output_print["output"]="add action:%s id:%s" %(actionName, response['result']['actionids'][0]) 
+            if self.output:
+                print json.dumps(output_print)
+            return json.dumps(output_print)
+    def action_trigger_create(self, actionName): 
+        if self.action_get(actionName):
+            output_print={}
+            output_print["status"]="ERR"
+            output_print["output"]="this druleName is exists"
+            if self.output:
+                print json.dumps(output_print)
+            return json.dumps(output_print)
+
+        #data = json.dumps({ 
+        #                   "jsonrpc":"2.0", 
+        #                   "method":"action.create", 
+        #                   "params": {
+        #                       "name": actionName,
+        #                       "eventsource": 0,
+        #                       "status": 0,
+        #                       "esc_period": 0,
+        #                       "operations": [
+        #                            {
+        #                                "operationtype": 2,
+        #                                "esc_step_from": 1,
+        #                                "esc_period": 0,
+        #                                "esc_step_to": 1
+        #                            },
+        #                            {
+        #                                "operationtype": 4,
+        #                                "esc_step_from": 2,
+        #                                "esc_period": 0,
+        #                                "opgroup": [
+        #                                    {
+        #                                        "groupid":hostgroupID
+        #                                    }
+        #                                ],
+        #                                "esc_step_to": 2
+        #                            },
+        #                            {
+        #                                "operationtype": 6,
+        #                                "esc_step_from": 3,
+        #                                "esc_period": 0,
+        #                                "optemplate": [
+        #                                    {
+        #                                        "templateid":templateID
+        #                                    }
+        #                                ],
+        #                                "esc_step_to": 3
+        #                            }
+        #                        ]
+        #                   },
+        #                   "auth": self.user_login(), 
+        #                   "id":1                   
+        #}) 
+
+        data = json.dumps({ 
+            "jsonrpc": "2.0",
+            "method": "action.create",
+            "params": {
+                "name": actionName,
+                "eventsource": 0,
+                "status": 0,
+                "esc_period": 120,
+                "def_shortdata": "{HOST.NAME1}_{TRIGGER.NAME}: {TRIGGER.STATUS}",
+                "def_longdata": "{TRIGGER.NAME}: {TRIGGER.STATUS}\r\nLast value: \r\n\r\n1. {ITEM.NAME1} ({HOST.NAME1}:{ITEM.KEY1}): {ITEM.VALUE1}",
+                "filter": {
+                    "evaltype": 0,
+                    "conditions": [
+                        {
+                            "conditiontype": 5,
+                            "operator": 0,
+                            "value": 1
+                        }
+                    ]
+                },
+                "operations": [
+                    {
+                        "operationtype": 0,
+                        "esc_period": 0,
+                        "esc_step_from": 1,
+                        "esc_step_to": 2,
+                        "evaltype": 0,
+                        "opmessage_grp": [
+                            {
+                                "usrgrpid": "7"
+                            }
+                        ],
+                        "opmessage": {
+                            "default_msg": 1,
+                            "mediatypeid": "1"
+                        }
+                    }
+                ]
+            },
+            "auth": self.user_login(), 
+            "id": 1
+        })
         request = urllib2.Request(self.url, data) 
         for key in self.header: 
             request.add_header(key, self.header[key]) 
@@ -2376,11 +2491,15 @@ if __name__ == "__main__":
                         nargs=2,
                         metavar=('actionName','hostgroupName'),\
                         help='add action')
-    
     parser_action.add_argument('--action_autoreg_add',
                         dest='action_autoreg_add',
                         nargs=2,
                         metavar=('actionName','hostgroupName'),\
+                        help='add action')
+    parser_action.add_argument('--action_trigger_add',
+                        dest='action_trigger_add',
+                        nargs=1,
+                        metavar=('actionName'),\
                         help='add action')
 
     # specialhost_get
@@ -2547,6 +2666,9 @@ if __name__ == "__main__":
         if args.action_autoreg_add:
             zabbix.action_autoreg_create(args.action_autoreg_add[0],\
                                         args.action_autoreg_add[1]\
+                              )
+        if args.action_trigger_add:
+            zabbix.action_trigger_create(args.action_trigger_add[0]\
                               )
         ############
         # template
